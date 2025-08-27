@@ -222,7 +222,11 @@ class Factory:
             raise MachineAreaNotProvided(
                 f"Please specify the machine areas you want to get {self._hardware_type.__name__}s from."
             )
-        elif isinstance(machine_areas, MachineArea) or isinstance(machine_areas, str):
+        if not isinstance(machine_areas, (list, str, MachineArea)):
+            raise MachineAreaNotProvided(
+                "Please provide a MachineArea or list of MachineAreas to filter by.",
+            )
+        elif isinstance(machine_areas, (MachineArea, str)):
             # convert arg into MachineArea format
             _area = _string_to_machine_area(machine_areas)
             if _area not in cfg.MACHINE_AREAS:
@@ -341,10 +345,7 @@ class Factory:
             )
         elif not isinstance(
             subtypes,
-            str,
-        ) and not isinstance(
-            subtypes,
-            list,
+            (str, list),
         ):
             raise InvalidHardwareType(
                 "Please provide a subtype or list of subtypes to filter by."
