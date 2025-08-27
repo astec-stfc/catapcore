@@ -6,17 +6,8 @@ from typing import Any, Callable, Optional
 import epicscorelibs.path.pyepics  # noqa: F401
 import numpy as np
 from epics import PV, ca
-from p4p.client.thread import (
-    Cancelled,
-    Context,
-    Disconnected,
-    RemoteError,
-    TimeoutError,
-)
-from p4p.nt.enum import ntenum
-from p4p.nt.ndarray import ntndarray
-from p4p.nt.scalar import ntbool, ntfloat, ntint, ntnumericarray, ntstr, ntstringarray
-import threading
+from p4p.client.thread import Context
+from p4p.nt.scalar import ntstr, ntstringarray
 from pydantic import BaseModel, ConfigDict, Field, PrivateAttr
 
 from catapcore.common.exceptions import FailedEPICSOperationWarning

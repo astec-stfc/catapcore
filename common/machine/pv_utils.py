@@ -40,11 +40,9 @@ from typing import (
     Any,
     Callable,
     ClassVar,
-    Deque,
     Dict,
     List,
     Literal,
-    Tuple,
     Type,
     Union,
 )
@@ -60,7 +58,6 @@ from pydantic import (
     ConfigDict,
     Field,
     PositiveInt,
-    PrivateAttr,
     field_validator,
     model_validator,
 )
@@ -128,7 +125,7 @@ class PVSignal(BaseModel):
 
     def __init__(self, *args, **kwargs):
         super(PVSignal, self).__init__(*args, **kwargs)
-        self._pv = None
+        self._pv: Protocol = None
         self.create_pv_instance()
         self._value = None
         self._timestamp = None
