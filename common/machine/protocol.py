@@ -6,7 +6,12 @@ from typing import Any, Callable, Optional
 import epicscorelibs.path.pyepics  # noqa: F401
 import numpy as np
 from epics import PV, ca
-from p4p.client.thread import Context
+from p4p.client.thread import (
+    Context,
+    Disconnected,
+    Cancelled,
+    RemoteError,
+)
 from p4p.nt.scalar import ntstr, ntstringarray
 from pydantic import BaseModel, ConfigDict, Field, PrivateAttr
 
@@ -129,11 +134,11 @@ class PVA(Protocol):
         self._sub = self._ctx.monitor(self.pvname, self._dispatch_callback)
 
     def _dispatch_callback(self, update: Any):
-        if isinstance(update, Exception):
+        if isinstance(update, (Disconnected, TimeoutError, RemoteError, Cancelled)):
             self._connected = False
             warnings.warn(
                 f"Connection to PV {self.pvname} failed: {type(update)}:{update}",
-                category=RuntimeWarning,
+                category=FailedEPICSOperationWarning,
             )
             return
 
@@ -157,42 +162,9 @@ class PVA(Protocol):
                 cb(update)
             except Exception as e:
                 warnings.warn(
-                    f"Callback raised exception: {e}", category=RuntimeWarning
+                    f"Callback raised exception: {e}",
+                    category=FailedEPICSOperationWarning,
                 )
-
-    # def _connection_callback(
-    #     self,
-    #     state: (
-    #         ntfloat
-    #         | ntint
-    #         | ntbool
-    #         | ntstr
-    #         | ntnumericarray
-    #         | ntstringarray
-    #         | ntenum
-    #         | ntndarray
-    #         | Exception
-    #     ),
-    # ):
-    #     """
-    #     Callback for connection state changes.
-
-    #     Args:
-    #         state: The state object or exception indicating the connection status.
-    #     """
-    #     if isinstance(state, (Disconnected, TimeoutError, RemoteError, Cancelled)):
-    #         # not entirely sure what the second two states represent so for now we assume that it means
-    #         # the PV isn't connected and we just log the warning
-    #         self._connected = False
-    #         warnings.warn(
-    #             f"Connection to PV {self.pvname} could not be established due to: {type(state)}:{state}",
-    #             category=FailedEPICSOperationWarning,
-    #         )
-    #     else:
-    #         self._connected = True
-    #         # TODO work out if there's a better way of getting this rather than mangling
-    #         # the type of the returned value
-    #         self._type = type(state).__name__
 
     def get(self, *args, **kwargs) -> Any | None:
         _val = self._ctx.get(self.pvname, timeout=self.timeout, throw=False)
@@ -219,7 +191,7 @@ class PVA(Protocol):
         if result is not None:
             warnings.warn(
                 f"Could not update {self.pvname} to {value}: {type(result)}:{result}",
-                category=RuntimeWarning,
+                category=FailedEPICSOperationWarning,
             )
 
     def add_callback(self, callback: Callable[[Any], None]) -> int:
