@@ -25,6 +25,7 @@ Classes:
 
 import functools
 import warnings
+import threading
 from collections import deque
 from datetime import datetime
 from enum import Enum, EnumMeta
@@ -39,11 +40,9 @@ from typing import (
     Any,
     Callable,
     ClassVar,
-    Deque,
     Dict,
     List,
     Literal,
-    Tuple,
     Type,
     Union,
 )
@@ -53,12 +52,12 @@ import numpy as np
 # To set the ca.dll path for pyepics from p4p
 import epicscorelibs.path.pyepics  # noqa: F401
 from epics import ca
+from p4p.nt.scalar import ntfloat, ntint
 from pydantic import (
     BaseModel,
     ConfigDict,
     Field,
     PositiveInt,
-    PrivateAttr,
     field_validator,
     model_validator,
 )
@@ -113,11 +112,7 @@ class PVSignal(BaseModel):
     """Description for a PV"""
     read_only: bool = True
     """Flag to define whether a PV has write-access"""
-    _pv: Protocol = PrivateAttr(default=None)
-    """
-    :class:`~catapcore.common.machine.protocol.Protocol`
-    for getting, setting, and monitoring from the control system
-    """
+
     _value: Any
     """Value of the PV"""
     _timestamp: datetime
@@ -130,6 +125,8 @@ class PVSignal(BaseModel):
 
     def __init__(self, *args, **kwargs):
         super(PVSignal, self).__init__(*args, **kwargs)
+        self._pv: Protocol = None
+        self.create_pv_instance()
         self._value = None
         self._timestamp = None
 
@@ -144,13 +141,11 @@ class PVSignal(BaseModel):
             raise ValueError("Protocol must be 'CA' or 'PVA'")
         return v_upper
 
-    @model_validator(mode="after")
     def create_pv_instance(self):
         if self.protocol == "CA":
             self._pv = CA(pvname=self.name, timeout=EPICS_TIMEOUT, auto_monitor=True)
         elif self.protocol == "PVA":
             self._pv = PVA(pvname=self.name, timeout=EPICS_TIMEOUT)
-        return self
 
     @use_initial_context
     def get(
@@ -561,6 +556,9 @@ class WaveformPV(PVSignal):
     _value: np.ndarray
     """Value of the PV"""
 
+    units: str = "arb. units"
+    """Units of the PV"""
+
     def __init__(self, *args, **kwargs):
         super(WaveformPV, self).__init__(*args, **kwargs)
 
@@ -624,24 +622,10 @@ class StatisticalPV(ScalarPV):
         frozen=False,
         arbitrary_types_allowed=True,
     )
-    _buffer: Deque[Tuple[datetime, Union[float, int]]]
-    """Buffer containing the most recent `buffer_capacity` readings from the PV"""
     auto_buffer: bool
     """Flag to indicate whether to begin buffering automatically"""
     buffer_capacity: PositiveInt = Field(alias="buffer_size")
     """Size of the buffer"""
-    _min: Union[float, int]
-    "Minimum value in the buffer"
-    _max: Union[float, int]
-    "Maximum value in the buffer"
-    _mean: float
-    "Mean value of the buffer"
-    _stdev: float
-    "Standard deviation of the buffer"
-    _median: Union[float, int]
-    "Median value of the buffer"
-    _mode: Union[float, int]
-    "Mode value of the buffer"
 
     def __init__(
         self,
@@ -650,8 +634,8 @@ class StatisticalPV(ScalarPV):
     ):
         super(StatisticalPV, self).__init__(*args, **kwargs)
         self._is_buffering = False
-        self._value = None
-        self._timestamp = None
+        self._value = self.pv._value
+        self._timestamp = self.pv._timestamp
         self._min = float_info.max
         self._max = float_info.min
         self._mean = None
@@ -660,11 +644,17 @@ class StatisticalPV(ScalarPV):
         self._mode = None
         self._buffer_size = self.buffer_capacity
         self._buffer = deque(maxlen=self._buffer_size)
+        self.lock = threading.RLock()
         self._callback_index = None
         if self.auto_buffer:
-            self._callback_index = self._pv.add_callback(
-                self.update_stats,
-            )
+            if isinstance(self._pv, PVA):
+                self._callback_index = self._pv.add_callback(
+                    self.update_pva_stats,
+                )
+            else:
+                self._callback_index = self._pv.add_callback(
+                    self.update_ca_stats,
+                )
             self._is_buffering = True
 
     def __repr__(self) -> str:
@@ -679,8 +669,38 @@ class StatisticalPV(ScalarPV):
         else:
             return f"<StatisticalPV>(name={self._pv.pvname}, buffering={self._is_buffering})"
 
+    def update_pva_stats(self, update):
+        try:
+            if isinstance(update, ntfloat) or isinstance(update, ntint):
+                timestamp = update.timestamp
+                value = update.real
+                with self.lock:
+                    self._buffer.append((timestamp, value))
+                    if len(self._buffer) > 2:
+                        self._mean = mean([v for _, v in self._buffer])
+                        self._stdev = stdev(
+                            [v for _, v in self._buffer], xbar=self._mean
+                        )
+                        self._median = median([v for _, v in self._buffer])
+                        self._mode = mode([v for _, v in self._buffer])
+
+                if abs(value) > abs(self._max):
+                    self._max = value
+                if abs(value) < abs(self._min):
+                    self._min = value
+                self._value = value
+                self._timestamp = (
+                    datetime.fromtimestamp(timestamp) if timestamp else datetime.now()
+                )
+        except Exception as e:
+            warnings.warn(
+                FailedEPICSOperationWarning(f"Callback error: {e}"),
+            )
+
     @use_initial_context
-    def update_stats(self, value: float | int, timestamp: float, **kw):
+    def update_ca_stats(
+        self, value: float | int | ntfloat | ntint, timestamp: float = None, **kw
+    ):
         """
         Update the buffer statistics and push back the buffer deque
 
@@ -689,21 +709,25 @@ class StatisticalPV(ScalarPV):
         :type value: Union[float, int]
         :type timestamp: float
         """
+        if isinstance(value, ntfloat) or isinstance(value, ntint):
+            # Decode the value and timestamp from p4p types to native types
+            timestamp = value.timestamp
+            value = value.real
         self._value = value
         if timestamp:
             self._timestamp = datetime.fromtimestamp(timestamp)
         else:
             self._timestamp = datetime.now()
         self._buffer.append((timestamp, value))
-        if abs(value) > abs(self._max):
-            self._max = value
-        if abs(value) < abs(self._min):
-            self._min = value
         if len(self._buffer) > 2:
             self._mean = mean([v for _, v in self._buffer])
             self._stdev = stdev([v for _, v in self._buffer], xbar=self._mean)
             self._median = median([v for _, v in self._buffer])
             self._mode = mode([v for _, v in self._buffer])
+        if abs(value) > abs(self._max):
+            self._max = value
+        if abs(value) < abs(self._min):
+            self._min = value
 
     @property
     def buffer(self) -> list:
@@ -713,7 +737,8 @@ class StatisticalPV(ScalarPV):
         :return: Buffer object
         :rtype: List
         """
-        return list(self._buffer)
+        with self.lock:
+            return list(self._buffer)
 
     @property
     def max(self) -> float:
@@ -796,25 +821,27 @@ class StatisticalPV(ScalarPV):
         :return: True if full
         :rtype: bool
         """
-        return len(self._buffer) == self._buffer.maxlen
+        with self.lock:
+            return len(self._buffer) == self._buffer.maxlen
 
     def clear_buffer(self) -> None:
         """
         Empty the statistics buffer
         """
-        self._buffer.clear()
+        with self.lock:
+            self._buffer.clear()
 
     @buffer_size.setter
     def buffer_size(self, size: int) -> None:
-        self._buffer = deque(self.buffer, maxlen=size)
-        self._buffer_size = size
+        with self.lock:
+            self._buffer = deque(self.buffer, maxlen=size)
+            self._buffer_size = size
 
     def stop_buffering(self) -> None:
         """
         Stop adding values to the statistics buffer
         """
         self._pv.remove_callback(self._callback_index)
-
         self._callback_index = None
         self._is_buffering = False
 
@@ -823,8 +850,12 @@ class StatisticalPV(ScalarPV):
         Stop adding values to the statistics buffer
         """
         if self._callback_index is None:
-            self.buffer.clear()
-            self._callback_index = self._pv.add_callback(self.update_stats)
+            with self.lock:
+                self.buffer.clear()
+            if isinstance(self._pv, CA):
+                self._callback_index = self._pv.add_callback(self.update_ca_stats)
+            elif isinstance(self._pv, PVA):
+                self._callback_index = self._pv.add_callback(self.update_pva_stats)
             self._is_buffering = True
 
     @property

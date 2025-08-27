@@ -7,15 +7,12 @@ import epicscorelibs.path.pyepics  # noqa: F401
 import numpy as np
 from epics import PV, ca
 from p4p.client.thread import (
-    Cancelled,
     Context,
     Disconnected,
+    Cancelled,
     RemoteError,
-    TimeoutError,
 )
-from p4p.nt.enum import ntenum
-from p4p.nt.ndarray import ntndarray
-from p4p.nt.scalar import ntbool, ntfloat, ntint, ntnumericarray, ntstr, ntstringarray
+from p4p.nt.scalar import ntstr, ntstringarray
 from pydantic import BaseModel, ConfigDict, Field, PrivateAttr
 
 from catapcore.common.exceptions import FailedEPICSOperationWarning
@@ -130,42 +127,44 @@ class PVA(Protocol):
         self._ctx = Context("pva")
         self._connected = False
         self._type: Optional[str] = None
-        self._callbacks: list = []
-        self._sub = self._ctx.monitor(self.pvname, self._connection_callback)
+        self._value: Optional[Any] = None
+        self._timestamp: Optional[Any] = None
+        self._callbacks: list[Callable] = []
+        # Start a single monitor
+        self._sub = self._ctx.monitor(self.pvname, self._dispatch_callback)
 
-    def _connection_callback(
-        self,
-        state: (
-            ntfloat
-            | ntint
-            | ntbool
-            | ntstr
-            | ntnumericarray
-            | ntstringarray
-            | ntenum
-            | ntndarray
-            | Exception
-        ),
-    ):
-        """
-        Callback for connection state changes.
-
-        Args:
-            state: The state object or exception indicating the connection status.
-        """
-        if isinstance(state, (Disconnected, TimeoutError, RemoteError, Cancelled)):
-            # not entirely sure what the second two states represent so for now we assume that it means
-            # the PV isn't connected and we just log the warning
+    def _dispatch_callback(self, update: Any):
+        if isinstance(update, (Disconnected, TimeoutError, RemoteError, Cancelled)):
             self._connected = False
             warnings.warn(
-                f"Connection to PV {self.pvname} could not be established due to: {type(state)}:{state}",
+                f"Connection to PV {self.pvname} failed: {type(update)}:{update}",
                 category=FailedEPICSOperationWarning,
             )
+            return
+
+        self._connected = True
+        self._type = type(update).__name__
+
+        # Extract value and timestamp
+        if isinstance(update, ntstr):
+            val = update.removeprefix("")
+        elif isinstance(update, ntstringarray):
+            val = np.array(update)
         else:
-            self._connected = True
-            # TODO work out if there's a better way of getting this rather than mangling
-            # the type of the returned value
-            self._type = type(state).__name__
+            val = update.real
+
+        self._value = val
+        self._timestamp = update.timestamp
+
+        # Dispatch to all registered callbacks
+        for cb in self._callbacks:
+            try:
+                cb(update)
+            except Exception as e:
+                warnings.warn(
+                    f"Callback raised exception: {e}",
+                    category=FailedEPICSOperationWarning,
+                )
 
     def get(self, *args, **kwargs) -> Any | None:
         _val = self._ctx.get(self.pvname, timeout=self.timeout, throw=False)
@@ -188,31 +187,24 @@ class PVA(Protocol):
         return val
 
     def put(self, value: Any) -> None:
-        """
-        Set the value of the PV using PVA protocol.
-
-        Args:
-            value: The value to set on the PV.
-        """
         result = self._ctx.put(self.pvname, value, timeout=self.timeout, throw=False)
         if result is not None:
             warnings.warn(
-                f"Could not update {self.pvname} to {value} due to : {type(result)}:{result}",
+                f"Could not update {self.pvname} to {value}: {type(result)}:{result}",
                 category=FailedEPICSOperationWarning,
             )
 
-    def add_callback(self, callback: Callable) -> int:
+    def add_callback(self, callback: Callable[[Any], None]) -> int:
         """
         Register a callback to be called on PV updates.
 
         Args:
-            callback: The function to call when the PV updates.
+            callback: A function accepting a single argument (the PV update).
 
         Returns:
-            int: The index of the registered callback.
+            int: Index of the registered callback.
         """
-        # TODO work out whether this will be okay if we keep all the callbacks and just add new ones
-        self._callbacks.append(self._ctx.monitor(self.pvname, callback))
+        self._callbacks.append(callback)
         return len(self._callbacks) - 1
 
     def remove_callback(self, callback_index: int) -> None:
