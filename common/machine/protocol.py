@@ -165,7 +165,9 @@ class PVA(Protocol):
             try:
                 cb(update)
             except Exception as e:
-                warnings.warn(f"Callback raised exception: {e}", category=RuntimeWarning)
+                warnings.warn(
+                    f"Callback raised exception: {e}", category=RuntimeWarning
+                )
 
     # def _connection_callback(
     #     self,
