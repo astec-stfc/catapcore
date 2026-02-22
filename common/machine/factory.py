@@ -9,6 +9,9 @@ Classes:
 """
 
 import warnings
+
+from pydantic import ValidationError
+
 from catapcore.common.machine.hardware import Hardware
 from catapcore.common.machine.area import MachineArea, _string_to_machine_area
 from catapcore.common.machine.pv_utils import StatisticalPV
@@ -30,6 +33,28 @@ import catapcore.config as cfg
 
 __all__ = ["Factory"]
 
+def flatten(dictionary: Dict, parent_key: str = "", separator: str = "_") -> Dict:
+    """
+    Flatten a nested dictionary -- used for expanding the nested `BaseModel` structure.
+
+    Args:
+        dictionary (Dict): The dictionary to flatten.
+        parent_key (str, optional): The base key to use for the flattened keys. Defaults to "".
+        separator (str, optional): The separator to use between keys. Defaults to "_".
+
+    Returns:
+        Dict: The flattened dictionary.
+    """
+    items = []
+    for key, value in dictionary.items():
+        if isinstance(key, str):
+            new_key = parent_key + separator + key if parent_key else key
+            if isinstance(value, MutableMapping):
+                items.extend(flatten(value, new_key, separator=separator).items())
+            else:
+                items.append((new_key, value))
+    return dict(items)
+
 
 class Factory:
     """
@@ -49,10 +74,18 @@ class Factory:
         self._hardware_type = hardware_type
         self.connect_on_creation = connect_on_creation
         self.areas = areas
-        self.hardware = self.create_hardware(
-            T=hardware_type,
-            areas=self.areas,
-        )
+        if cfg.CONFIG_FORMAT == "CATAP":
+            self.hardware = self.create_hardware(
+                T=hardware_type,
+                areas=self.areas,
+            )
+        elif cfg.CONFIG_FORMAT == "LAURA":
+            self.hardware = self.create_hardware_laura(
+                T=hardware_type,
+                areas=self.areas,
+            )
+        else:
+            raise ValueError(f"Unsupported config format: {cfg.CONFIG_FORMAT}")
         self._current_snapshot = Snapshot(
             hardware=self.hardware,
             hardware_type=self._hardware_type.__name__.lower(),
@@ -132,6 +165,70 @@ class Factory:
                     raise MachineAreaNotProvided(
                         f"Could not find machine area property for {name} in {file}",
                     )
+        hardware_mappings = {
+            name: hardware
+            for name, hardware in sorted(
+                hardware_mappings.items(),
+                key=lambda item: item[1],
+            )
+        }
+        return hardware_mappings
+
+    def create_hardware_laura(
+        self,
+        T: Type[Hardware],
+        areas: MachineArea | List[MachineArea] = None,
+    ) -> Dict[str, Hardware]:
+        """
+        Instantiate :class:`~catapcore.common.machine.hardware.Hardware` objects.
+
+        :param T: Specific :class:`~catapcore.common.machine.hardware.Hardware` class type
+        :param areas: Select only objects in the :class:`~catapcore.common.machine.area.MachineArea` provided
+        :type T: Type[Hardware]
+        :type areas: Union[MachineArea, List[MachineArea], None]
+
+        :returns: Dictionary of :class:`~catapcore.common.machine.hardware.Hardware` objects
+        :rtype: Dict[str, Hardware]
+        """
+        hardware_type = T.__name__
+        elems = {
+            k: v
+            for k, v in cfg.LAURA_LATTICE.elements.items()
+            if v.hardware_class == hardware_type
+            or v.hardware_type == hardware_type
+            or v.__class__.model_fields["hardware_type"].alias == hardware_type
+            or v.__class__.model_fields["hardware_class"].alias == hardware_type
+        }
+        hardware_mappings = {}
+        if areas is None:
+            # no specific machine areas applied, load everything.
+            areas = cfg.MACHINE_AREAS
+        if isinstance(areas, str) or isinstance(areas, MachineArea):
+            areas = [areas]
+        for name, elem in elems.items():
+            if elem.controls is not None:
+                try:
+                    hardware_area = MachineArea(name=elem.machine_area)
+                    if any(
+                        [
+                            hardware_area.name
+                            == _string_to_machine_area(area=area).name
+                            for area in areas
+                        ]
+                    ):
+                        hardware_mappings[name] = T(
+                            is_virtual=self.is_virtual,
+                            connect_on_creation=self.connect_on_creation,
+                            controls_information=elem.controls.model_dump(),
+                            properties=flatten(elem.model_dump()),
+                        )
+                except KeyError:
+                    raise MachineAreaNotProvided(
+                        f"Could not find machine area property for {name} in LAURA lattice.",
+                    )
+                except ValidationError:
+                    print(f"Validation error for {elem.name} in LAURA lattice")
+                    raise
         hardware_mappings = {
             name: hardware
             for name, hardware in sorted(

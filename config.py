@@ -1,6 +1,6 @@
 from pathlib import Path
 import os
-from typing import Dict, List, Tuple
+from typing import Dict, List, Tuple, Literal
 from catapcore.common.machine.area import MachineArea
 from collections import namedtuple
 
@@ -57,3 +57,38 @@ Example usage:
 """
 
 VIRTUAL_PREFIX = "VM-"
+
+CONFIG_FORMAT = "CATAP"  # can be "CATAP" or "NALA"
+
+LAURA_LATTICE = None
+
+
+def set_config_format(config: Literal["CATAP", "LAURA"], lattice_location: str) -> None:
+    global CONFIG_FORMAT, LAURA_LATTICE, LATTICE_LOCATION, MACHINE_AREAS
+
+    # Validate first
+    if config not in ("CATAP", "LAURA"):
+        raise ValueError(f"Unsupported config format: {config}")
+
+    if not os.path.isdir(lattice_location):
+        raise ValueError(f"Lattice location does not exist: {lattice_location}")
+
+    CONFIG_FORMAT = config
+
+    if config == "LAURA":
+        from laura import LAURA
+
+        LAURA_LATTICE = LAURA(
+            layout=os.path.join(lattice_location, "layouts.yaml"),
+            section=os.path.join(lattice_location, "sections.yaml"),
+            element_list=os.path.join(lattice_location, "YAML"),
+        )
+        LATTICE_LOCATION = None
+        _area_names = list(LAURA_LATTICE.sections.keys())
+        _area_names.append("TEST")
+        _machine_areas_tuple = namedtuple("MACHINE_AREAS", _area_names)
+        MACHINE_AREAS = _machine_areas_tuple(*[MachineArea(name=name) for name in _area_names])
+    else:
+        LATTICE_LOCATION = lattice_location
+        LAURA_LATTICE = None
+
