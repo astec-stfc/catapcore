@@ -25,7 +25,7 @@ from catapcore.common.exceptions import (
     HardwareNameNotProvided,
 )
 from ruamel.yaml import YAML
-from typing import Any, Dict, List, Tuple, Union, Callable, Type
+from typing import Any, Dict, List, Tuple, Union, Callable, Type, MutableMapping
 import os
 from pathlib import Path
 import catapcore.config as cfg

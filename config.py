@@ -58,7 +58,7 @@ Example usage:
 
 VIRTUAL_PREFIX = "VM-"
 
-CONFIG_FORMAT = "CATAP"  # can be "CATAP" or "NALA"
+CONFIG_FORMAT = "CATAP"  # can be "CATAP" or "LAURA"
 
 LAURA_LATTICE = None
 

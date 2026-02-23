@@ -60,6 +60,7 @@ from pydantic import (
     PositiveInt,
     field_validator,
     model_validator,
+    AliasChoices,
 )
 
 from catapcore.common.exceptions import FailedEPICSOperationWarning, UnexpectedPVEntry
@@ -101,7 +102,7 @@ class PVSignal(BaseModel):
     Base class for interacting with an EPICS PV.
     """
 
-    name: str
+    name: str = Field(validation_alias=AliasChoices("name", "identifier"))
     """PV name"""
     protocol: str = "CA"
     """:class:`~catapcore.common.machine.protocol.Protocol` to use for the PV
@@ -874,7 +875,7 @@ class PVInfo(BaseModel):
     Base class for defining attributes associated with a PV
     """
 
-    pv: str
+    pv: str = Field(validation_alias=AliasChoices("pv", "identifier"))
     """Full name of PV"""
     virtual_pv: str | None = None
     """Virtual PV name, if applicable"""

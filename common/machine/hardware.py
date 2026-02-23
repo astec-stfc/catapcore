@@ -383,7 +383,7 @@ class Properties(BaseModel):
     hardware_type: str
     """Type of hardware object"""
     position: Union[float, List[float]] = Field(
-        validation_alias=AliasChoices("position", "physical_middle_z")
+        validation_alias=AliasChoices("position", "physical_middle_z", "physical_middle")
     )
     """Z position along the lattice in meters"""
     machine_area: MachineArea
@@ -412,9 +412,17 @@ class Properties(BaseModel):
             )
 
     @field_validator("name_alias", mode="before")
-    def create_alias_list(cls, v: str) -> List[str]:
+    def create_alias_list(cls, v: str | None) -> List[str]:
+        if v is None:
+            return [""]
         aliases = v.split(",")
         return [alias.strip() for alias in aliases]
+
+    @field_validator("position", mode="before")
+    def validate_position(cls, v: float | List[float]) -> float:
+        if isinstance(v, list):
+            return v[2]
+        return v
 
 
 class Hardware(BaseModel):
