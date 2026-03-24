@@ -1,0 +1,79 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel", "versioneer[toml]==0.29"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "catapcore"
+description = "A comprehensive Python framework for interacting with EPICS PVs through an object-oriented interface"
+readme = "README.md"
+requires-python = ">=3.9"
+license = {text = "See LICENSE file"}
+authors = [
+    {name = "STFC Accelerator & Synchrotron Science Group", email = "ujo48515@stfc.ac.uk"}
+]
+keywords = ["EPICS", "controls", "physics", "accelerator", "hardware"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: Apache Software License",
+    "Natural Language :: English",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering",
+]
+dependencies = [
+    "pydantic>=2.0.0",
+    "pyepics>=3.5.0",
+    "p4p>=4.2.0",
+    "epicscorelibs>=7.0.0",
+    "ruamel.yaml>=0.17.0",
+    "numpy>=1.21.0",
+]
+dynamic = ["version"]
+
+[project.urls]
+Homepage = "https://github.com/astec-stfc/catapcore"
+Documentation = "https://astec-stfc.github.io/catapcore"
+Repository = "https://github.com/astec-stfc/catapcore"
+"Bug Tracker" = "https://github.com/astec-stfc/catapcore/issues"
+
+[tool.setuptools]
+packages = ["catapcore", "catapcore.common", "catapcore.common.machine"]
+
+[tool.versioneer]
+VCS = "git"
+style = "pep440"
+versionfile_source = "catapcore/_version.py"
+versionfile_build = "catapcore/_version.py"
+tag_prefix = "v"
+parentdir_prefix = "catapcore-"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+
+[tool.black]
+line-length = 100
+target-version = ['py39', 'py310', 'py311', 'py312']
+
+[tool.isort]
+profile = "black"
+line_length = 100
+multi_line_mode = 3
+include_trailing_comma = true
+
+[tool.mypy]
+python_version = "3.9"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = false
+
+[tool.pylint]
+max-line-length = 100
+disable = ["C0111", "R0913"]
