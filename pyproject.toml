@@ -4,19 +4,18 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "catapcore"
-description = "A comprehensive Python framework for interacting with EPICS PVs through an object-oriented interface"
+description = "A Middle Layer Python framework for interacting with EPICS PVs through an object-oriented interface"
 readme = "README.md"
 requires-python = ">=3.9"
-license = {text = "See LICENSE file"}
+license = {text = "Copyright 2025 UKRI STFC Matthew King"}
 authors = [
-    {name = "STFC Accelerator & Synchrotron Science Group", email = "ujo48515@stfc.ac.uk"}
+    {name = "STFC Accelerator Science and Technology Centre", email = "matthew.king@stfc.ac.uk"}
 ]
 keywords = ["EPICS", "controls", "physics", "accelerator", "hardware"]
 classifiers = [
     "Development Status :: 4 - Beta",
-    "Intended Audience :: Science/Research",
+    "Intended Audience :: Science/Research/Controls",
     "Intended Audience :: Developers",
-    "License :: OSI Approved :: Apache Software License",
     "Natural Language :: English",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.9",
@@ -42,13 +41,14 @@ Repository = "https://github.com/astec-stfc/catapcore"
 "Bug Tracker" = "https://github.com/astec-stfc/catapcore/issues"
 
 [tool.setuptools]
-packages = ["catapcore", "catapcore.common", "catapcore.common.machine"]
+packages = ["common"]
+package-dir = {"" = "."}
 
 [tool.versioneer]
 VCS = "git"
 style = "pep440"
-versionfile_source = "catapcore/_version.py"
-versionfile_build = "catapcore/_version.py"
+versionfile_source = "_version.py"
+versionfile_build = "_version.py"
 tag_prefix = "v"
 parentdir_prefix = "catapcore-"
 

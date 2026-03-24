@@ -1,10 +1,10 @@
 # catapcore
 
-A comprehensive Python framework for interacting with EPICS PVs (via Channel Access and PV Access protocols) through an object-oriented interface. This library provides a structured way to define, manage, and control complex hardware setups.
+A Middle Layer Python framework for interacting with EPICS PVs (via Channel Access and PV Access protocols) through an object-oriented interface. This library provides a structured way to define, manage, and control complex hardware setups.
 
 ## Overview
 
-catapcore is a core framework that enables users to interact with EPICS PVs through well-defined Python classes. Instead of directly managing PV connections and values, users create custom hardware classes that inherit from the framework's base classes to encapsulate hardware-specific behavior and control logic.
+catapcore is a core framework that enables users to interact with EPICS PVs through defined Python classes. Instead of directly managing PV connections and values, users create custom hardware classes that inherit from the framework's base classes to encapsulate hardware-specific behavior and control logic.
 
 ### Key Features
 
