@@ -6,6 +6,8 @@ A Middle Layer Python framework for interacting with EPICS PVs (via Channel Acce
 
 catapcore is a core framework that enables users to interact with EPICS PVs through defined Python classes. Instead of directly managing PV connections and values, users create custom hardware classes that inherit from the framework's base classes to encapsulate hardware-specific behavior and control logic.
 
+It acts as a common framework for the [acronicta-catap](https://github.com/astec-stfc/acronicta-catap) library, which auto-generates hardware class definitions from YAML files.
+
 ### Key Features
 
 - **Unified PV Access**: Support for both Channel Access (CA) and PV Access (PVA) protocols

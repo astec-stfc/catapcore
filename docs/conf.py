@@ -6,15 +6,15 @@
 import os
 import sys
 
-# Add the parent directory to the path so we can import catapcore
+# Add the parent directory to the path so we can import the modules
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
 project = 'catapcore'
-copyright = '2026, STFC Accelerator & Synchrotron Science Group'
-author = 'STFC Accelerator & Synchrotron Science Group'
+copyright = '2026, STFC Accelerator Science and Technology Centre'
+author = 'STFC Accelerator Science and Technology Centre'
 release = '0.1.0'
 
 # -- General configuration ---------------------------------------------------
@@ -22,7 +22,6 @@ release = '0.1.0'
 
 extensions = [
     'sphinx.ext.autodoc',
-    'sphinx.ext.autosummary',
     'sphinx.ext.viewcode',
     'sphinx.ext.intersphinx',
     'sphinx_rtd_theme',
