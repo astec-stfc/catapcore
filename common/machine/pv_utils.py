@@ -124,6 +124,12 @@ class PVSignal(BaseModel):
     )
 
     def __init__(self, *args, **kwargs):
+        """
+        Initialize a PVSignal instance for EPICS PV interaction.
+
+        :param args: Positional arguments passed to Pydantic BaseModel
+        :param kwargs: PV configuration including name, protocol, description, and read_only flag
+        """
         super(PVSignal, self).__init__(*args, **kwargs)
         self._pv: Protocol = None
         self.create_pv_instance()
@@ -300,6 +306,12 @@ class StringPV(PVSignal):
     """Length of the PV"""
 
     def __init__(self, *args, **kwargs):
+        """
+        Initialize a StringPV instance for string-type EPICS PVs.
+
+        :param args: Positional arguments passed to PVSignal
+        :param kwargs: Keyword arguments including name, protocol, and count
+        """
         super(StringPV, self).__init__(*args, **kwargs)
 
     def __repr__(self) -> str:
@@ -357,6 +369,12 @@ class ScalarPV(PVSignal):
     """Value of the PV"""
 
     def __init__(self, *args, **kwargs):
+        """
+        Initialize a ScalarPV instance for scalar-type EPICS PVs.
+
+        :param args: Positional arguments passed to PVSignal
+        :param kwargs: Keyword arguments including name, protocol, units, and value type
+        """
         super(ScalarPV, self).__init__(*args, **kwargs)
 
     def __repr__(self) -> str:
@@ -415,6 +433,12 @@ class StatePV(PVSignal):
     """Mapping between state names as string and values as integers"""
 
     def __init__(self, *args, **kwargs):
+        """
+        Initialize a StatePV instance for enumerated state EPICS PVs.
+
+        :param args: Positional arguments passed to PVSignal
+        :param kwargs: Keyword arguments including name, protocol, and states mapping
+        """
         super(StatePV, self).__init__(*args, **kwargs)
 
     @field_validator("states", mode="before")
@@ -500,6 +524,12 @@ class BinaryPV(PVSignal):
     """Value of the PV"""
 
     def __init__(self, *args, **kwargs):
+        """
+        Initialize a BinaryPV instance for binary-type EPICS PVs.
+
+        :param args: Positional arguments passed to PVSignal
+        :param kwargs: Keyword arguments including name, protocol, and value type
+        """
         super(BinaryPV, self).__init__(*args, **kwargs)
 
     def __repr__(self):
@@ -560,6 +590,12 @@ class WaveformPV(PVSignal):
     """Units of the PV"""
 
     def __init__(self, *args, **kwargs):
+        """
+        Initialize a WaveformPV instance for waveform-type EPICS PVs.
+
+        :param args: Positional arguments passed to PVSignal
+        :param kwargs: Keyword arguments including name, protocol, units, and numpy array type
+        """
         super(WaveformPV, self).__init__(*args, **kwargs)
 
     @model_validator(mode="after")
@@ -632,6 +668,15 @@ class StatisticalPV(ScalarPV):
         *args,
         **kwargs,
     ):
+        """
+        Initialize a StatisticalPV instance for scalar PVs with statistical buffering.
+
+        Supports automatic buffering and calculation of statistics (mean, std. dev., median, mode)
+        on PV values. Can collect statistics automatically if auto_buffer is True.
+
+        :param args: Positional arguments passed to ScalarPV
+        :param kwargs: Keyword arguments including name, protocol, auto_buffer, and buffer_size
+        """
         super(StatisticalPV, self).__init__(*args, **kwargs)
         self._is_buffering = False
         self._value = self.pv._value

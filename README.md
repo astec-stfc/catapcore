@@ -1,93 +1,395 @@
 # catapcore
 
+A comprehensive Python framework for interacting with EPICS PVs (via Channel Access and PV Access protocols) through an object-oriented interface. This library provides a structured way to define, manage, and control complex hardware setups.
+
+## Overview
+
+catapcore is a core framework that enables users to interact with EPICS PVs through well-defined Python classes. Instead of directly managing PV connections and values, users create custom hardware classes that inherit from the framework's base classes to encapsulate hardware-specific behavior and control logic.
+
+### Key Features
+
+- **Unified PV Access**: Support for both Channel Access (CA) and PV Access (PVA) protocols
+- **Type-Safe PV Management**: Define PVs with specific types (Scalar, Binary, State, String, Waveform)
+- **Statistical Analysis**: Built-in support for statistical PVs with buffering and analysis capabilities
+- **Hardware Abstraction**: Object-oriented interface for defining custom hardware classes
+- **Snapshot Functionality**: Save and restore hardware states with snapshot management
+- **Virtual Control System Support**: Mock EPICS connections for testing and development
+- **Structured Configuration**: YAML-based hardware configuration with machine area support
+
+## Architecture
+
+### Core Classes
+
+The framework is built around five main base classes that work together to provide a complete hardware interaction system:
+
+#### 1. **PVMap** (`common.machine.hardware.PVMap`)
+Maps and manages EPICS PV connections for a specific hardware object.
+
+- Handles both physical and virtual PV connections
+- Supports automatic connection on creation
+- Manages different PV types (Scalar, Binary, State, String, Waveform)
+- Tracks statistical PVs separately for analysis
+- Validates PVs using Pydantic models
+
+**Key Methods:**
+- `statistics`: Get all statistical PVs
+- `pvs`: Get all PVs in the map
+- `is_buffer_full()`: Check if statistics buffers are full
+- `clear_buffer()`: Clear statistics buffers
+- `set_buffer_size()`: Configure buffer sizes
+- `start_buffering()`: Start collecting statistics
+- `stop_buffering()`: Stop collecting statistics
+
+#### 2. **ControlsInformation** (`common.machine.hardware.ControlsInformation`)
+Provides access to PVs and control functionality for a hardware object.
+
+- Wraps the `PVMap` for PV access
+- Delegates statistical operations to the underlying PVMap
+- Acts as the interface for reading/writing PV values
+- Inherits from Pydantic BaseModel for validation
+
+**Key Methods:**
+- `statistics`: Access statistical PVs
+- `is_buffer_full()`: Check buffer status
+- `clear_buffer()`: Clear buffers
+- `set_buffer_size()`: Set buffer sizes
+- `start_buffering()`: Start statistics collection
+- `stop_buffering()`: Stop statistics collection
+
+#### 3. **Properties** (`common.machine.hardware.Properties`)
+Defines and manages metadata and static information about hardware.
+
+Attributes include:
+- `name`: Hardware object name
+- `name_alias`: Alternative names for the object
+- `hardware_type`: Type classification (e.g., "magnet", "detector")
+- `position`: Z-position along the lattice (meters)
+- `machine_area`: Location in the accelerator
+- `subtype`: Optional hardware subtype
+
+#### 4. **Hardware** (`common.machine.hardware.Hardware`)
+The main high-level interface combining `PVMap`, `ControlsInformation`, and `Properties`.
+
+- Provides unified interface for hardware interaction, ability to combine `ControlsInformation` with `Property` information
+- Supports snapshot creation and restoration
+- Handles virtual and physical control system modes
+
+**Key Methods:**
+- `create_snapshot()`: Capture current hardware state
+- `apply_snapshot()`: Restore hardware to a saved state
+
+#### 5. **Factory** (`common.machine.factory.Factory`)
+Creates and manages multiple Hardware objects of the same type.
+
+- Loads hardware configurations from folder of YAML files
+- Instantiates hardware objects from config templates
+- Supports filtering by machine area
+- Supports filtering by hardware type
+- Manages hardware lifecycle (creation, connection, disconnection)
+
+**Key Methods:**
+- `create_hardware()`: Instantiate hardware objects
+- `get_hardware_by_area()`: Filter hardware by machine area
+- `get_hardware()`: Retrieve specific hardware
+- `create_snapshot()`: Capture all current hardware states
+- `apply_snapshot()`: Restore all hardware to a saved state
+- `save_snapshot()`: Save snapshot to yaml file
+- `load_snapshot()`: Load snapshot in memory from yaml file
+
+#### 6. **High-Level System** (`common.machine.high_level_system.HighLevelSystem`)
+Creates and manages multiple Hardware objects of different types.
+
+- Loads hardware configurations from folder of YAML files (types/names listed in `components` field)
+- Checks the types of each Hardware component against Pydantic definition
+- Snapshot functionality from `HighLevelSystem` level
+
+**Key Methods:**:
+- `create_snapshot()`: Capture all current component states
+- `apply_snapshot()`: Restore all components to a saved state
 
 
-## Getting started
 
-To make it easy for you to get started with GitLab, here's a list of recommended next steps.
+## Usage Examples
 
-Already a pro? Just edit this README.md and make it your own. Want to make it easy? [Use the template at the bottom](#editing-this-readme)!
+### Basic Hardware Definition
 
-## Add your files
+```python
+from catapcore.common.machine.hardware import Hardware, PVMap, ControlsInformation, Properties
+from catapcore.common.machine.pv_utils import ScalarPV, BinaryPV
+from time import sleep
 
-- [ ] [Create](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#create-a-file) or [upload](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#upload-a-file) files
-- [ ] [Add files using the command line](https://docs.gitlab.com/topics/git/add_files/#add-files-to-a-git-repository) or push an existing Git repository with the following command:
+# Define a PVMap for your hardware
+class MyDevicePVMap(PVMap):
+    voltage: StatisticalPV
+    current: StatisticalPV
+    power_on: BinaryPV
+
+    def __init__(
+        self,
+        is_virtual: bool,
+        connect_on_creation: bool = False,
+        *args,
+        **kwargs,
+    ):
+        MyDevicePVMap.is_virtual = is_virtual
+        MyDevicePVMap.connect_on_creation = connect_on_creation
+        super().__init__(
+            is_virtual=is_virtual,
+            *args,
+            **kwargs,
+        )
+
+
+# Define control information
+class MyDeviceControls(ControlsInformation):
+    pv_record_map: MyDevicePVMap
+
+    @property
+    def current(self) -> float:
+        return self.pv_record_map.current.get()
+
+    @current.setter
+    def current(self, value: float) -> None:
+        self.pv_record_map.current.put(value)
+
+    @property
+    def is_on(self) -> float:
+        return self.pv_record_map.power_on.get()
+
+    def switch_on(self) -> None:
+        if not self.is_on:
+            self.pv_record_map.power_on.put(True)
+
+    def switch_off(self) -> None:
+        if self.is_on:
+            self.pv_record_map.power_on.put(False)
+
+# Define static properties
+class MyDeviceProperties(Properties):
+    current_limit: float
+
+# Create your hardware class
+class MyDevice(Hardware):
+    def __init__(self, is_virtual=True, **kwargs):
+        super().__init__(is_virtual=is_virtual, **kwargs)
+
+    @property
+    def is_on(self) -> bool:
+        return self.controls_information.is_on
+
+    @property
+    def is_off(self) -> bool:
+        return not self.controls_information.is_on
+
+    def switch_on(self) -> bool:
+        return self.controls_information.switch_on
+
+    def switch_off(self) -> bool:
+        return not self.controls_information.switch_off
+
+    @property
+    def current(self) -> float:
+        return self.controls_information.current
+
+    @current.setter
+    def current(self, value: float) -> None:
+        if value > current_limt:
+            raise ValueError(f"Unable to set {self.name} current because {value} was greater than limit: {current_limit}")
+        if self.is_off:
+            self.controls_information.switch_on()
+        while not self.is_on:
+            time.sleep(0.1)
+        self.controls_information.current = value
+
 
 ```
-cd existing_repo
-git remote add origin https://gitlab.stfc.ac.uk/ujo48515/catapcore.git
-git branch -M main
-git push -uf origin main
+
+### Using a Factory
+
+```python
+from catapcore.common.machine.hardware import Hardware
+from catapcore.common.machine.area import MachineArea
+from catapcore.common.machine.factory import Factory
+from my_hardware import MyDevice
+
+from typing import Dict, Union, List
+
+class MyFactory(Factory):
+    def __init__(
+        self, 
+        is_virtual=True,
+        lattice_folder: str = None,
+        hardware_type: Hardware,
+        connection_on_creation: bool = False,
+        areas: MachineArea | List[MachineArea]
+    ):
+        super().__init__(
+            is_virtual=is_virtual,
+            connection_on_creation=connection_on_creation,
+            lattice_folder=lattice_folder,
+            hardware_type=hardware_type,
+            areas=areas,
+        )
+    
+    def get_current(self, names: str | List[str] | None) -> Dict[str, float]:
+        def _get_current(device: MyDevice) -> float:
+            return device.current
+        return self._get_property(names, property_=_get_current)
+
+    def set_current(
+        self, 
+        names: str | List[str],
+        values: float | List[float],
+        settings: Dict[str, float] = None
+    ):
+        def _set_current(device: MyDevice, value: float) -> None:
+            device.current = value
+        if settings:
+            self._set_property_multiple(
+                settings=settings,
+                setter_=_set_current,
+            )
+        else:
+            self._set_property(
+                names=names,
+                values=value,
+                setter_=_set_current,
+            )
+
+            
+
+# Create a factory for multiple devices
+factory = MyFactory(
+    is_virtual=False,
+    lattice_folder="./my_devices",
+    hardware_type=MyDevice
+    connect_on_creation=True
+)
+
+# Access hardware
+devices = factory.hardware  # Dict[str, Hardware]
+
+# Get hardware by name
+device = factory.get_hardware("DEVICE_001")
+
+# Get hardware by area
+area_devices = factory.get_hardware_by_area("AREA_01")
 ```
 
-## Integrate with your tools
+### Working with Snapshots
 
-- [ ] [Set up project integrations](https://gitlab.stfc.ac.uk/ujo48515/catapcore/-/settings/integrations)
+```python
+# Create a snapshot of current state
+factory.current_snapshot.update()
 
-## Collaborate with your team
+# Save to file
+factory.current_snapshot.save("my_snapshot.yaml")
 
-- [ ] [Invite team members and collaborators](https://docs.gitlab.com/ee/user/project/members/)
-- [ ] [Create a new merge request](https://docs.gitlab.com/ee/user/project/merge_requests/creating_merge_requests.html)
-- [ ] [Automatically close issues from merge requests](https://docs.gitlab.com/ee/user/project/issues/managing_issues.html#closing-issues-automatically)
-- [ ] [Enable merge request approvals](https://docs.gitlab.com/ee/user/project/merge_requests/approvals/)
-- [ ] [Set auto-merge](https://docs.gitlab.com/user/project/merge_requests/auto_merge/)
+# Load and apply a snapshot
+factory.current_snapshot.load("my_snapshot.yaml")
+factory.current_snapshot.apply()
+```
 
-## Test and Deploy
+### Working with Statistical PVs
 
-Use the built-in continuous integration in GitLab.
+```python
+# Enable statistics collection
+factory.hardware["DEVICE_001"].start_buffering("voltage")
 
-- [ ] [Get started with GitLab CI/CD](https://docs.gitlab.com/ee/ci/quick_start/)
-- [ ] [Analyze your code for known vulnerabilities with Static Application Security Testing (SAST)](https://docs.gitlab.com/ee/user/application_security/sast/)
-- [ ] [Deploy to Kubernetes, Amazon EC2, or Amazon ECS using Auto Deploy](https://docs.gitlab.com/ee/topics/autodevops/requirements.html)
-- [ ] [Use pull-based deployments for improved Kubernetes management](https://docs.gitlab.com/ee/user/clusters/agent/)
-- [ ] [Set up protected environments](https://docs.gitlab.com/ee/ci/environments/protected_environments.html)
+# Check if buffer is full
+if factory.hardware["DEVICE_001"].is_buffer_full("voltage"):
+    stats = factory.hardware["DEVICE_001"].statistics["voltage"]
+    print(f"Mean: {stats.mean()}, Std Dev: {stats.stdev()}")
 
-***
+# Clear buffers
+factory.hardware["DEVICE_001"].clear_buffer(None)  # Clear all
+```
 
-# Editing this README
+## PV Types
 
-When you're ready to make this README your own, just edit this file and use the handy template below (or feel free to structure it however you want - this is just a starting point!). Thanks to [makeareadme.com](https://www.makeareadme.com/) for this template.
+The framework supports several PV types for different use cases:
 
-## Suggestions for a good README
+- **ScalarPV**: Floating-point values
+- **BinaryPV**: Boolean/on-off values
+- **StatePV**: Enumerated states (requires StateMap)
+- **StringPV**: Text values
+- **WaveformPV**: Array data
+- **StatisticalPV**: Scalar values with buffering for statistical analysis
 
-Every project is different, so consider which of these sections apply to yours. The sections used in the template are suggestions for most open source projects. Also keep in mind that while a README can be too long and detailed, too long is better than too short. If you think your README is too long, consider utilizing another form of documentation rather than cutting out information.
+## Configuration
 
-## Name
-Choose a self-explaining name for your project.
+### YAML Hardware Configuration
 
-## Description
-Let people know what your project can do specifically. Provide context and add a link to any reference visitors might be unfamiliar with. A list of Features or a Background subsection can also be added here. If there are alternatives to your project, this is a good place to list differentiating factors.
+Hardware objects are typically defined in YAML files located in the `lattice` directory:
 
-## Badges
-On some READMEs, you may see small images that convey metadata, such as whether or not all the tests are passing for the project. You can use Shields to add some to your README. Many services also have instructions for adding a badge.
+```yaml
+controls_information:
+    pv_record_map:
+    voltage:
+        pv: DEVICE:VOLTAGE
+        type: statistical
+        buffer_size: 10
+        auto_buffer: True
+    current:
+        pv: DEVICE:CURRENT
+        type: statistical
+        buffer_size: 10
+        auto_buffer: True
+        virtual_pv: VIRTUAL:DEVICE:CURRENT
+    power_on:
+        pv: DEVICE:POWER
+        type: binary
+properties:
+    name: DEVICE_001
+    name_alias:
+    - DEV_1
+    hardware_type: MyDevice
+    position: 10.5
+    current_limt: 10
+    machine_area: AREA_01
 
-## Visuals
-Depending on what you are making, it can be a good idea to include screenshots or even a video (you'll frequently see GIFs rather than actual videos). Tools like ttygif can help, but check out Asciinema for a more sophisticated method.
+```
+
+### Virtual vs. Physical Mode
+
+Run in virtual mode for testing and development:
+
+```python
+factory = MyDevice(
+    is_virtual=True,  # Use virtual prefix for all PV names
+    connect_on_creation=True
+)
+```
+
+Configure the virtual prefix in `config.py`:
+
+```python
+VIRTUAL_PREFIX = "TEST:"  # All PVs become "TEST:ORIGINAL_NAME" unless virtual_pv is defined in YAML
+```
+
+You can also specify virtual PVs on an individual basis in the YAML PV defintion.
 
 ## Installation
-Within a particular ecosystem, there may be a common way of installing things, such as using Yarn, NuGet, or Homebrew. However, consider the possibility that whoever is reading your README is a novice and would like more guidance. Listing specific steps helps remove ambiguity and gets people to using your project as quickly as possible. If it only runs in a specific context like a particular programming language version or operating system or has dependencies that have to be installed manually, also add a Requirements subsection.
 
-## Usage
-Use examples liberally, and show the expected output if you can. It's helpful to have inline the smallest example of usage that you can demonstrate, while providing links to more sophisticated examples if they are too long to reasonably include in the README.
+```bash
+pip install -e .
+```
 
-## Support
-Tell people where they can go to for help. It can be any combination of an issue tracker, a chat room, an email address, etc.
+## Dependencies
 
-## Roadmap
-If you have ideas for releases in the future, it is a good idea to list them in the README.
+- pydantic: Data validation and settings
+- pyepics: Channel Access protocol support
+- p4p: PV Access protocol support
+- epicscorelibs: EPICS core libraries
+- ruamel.yaml: YAML configuration handling
+- numpy: Numerical operations
 
-## Contributing
-State if you are open to contributions and what your requirements are for accepting them.
+## Documentation
 
-For people who want to make changes to your project, it's helpful to have some documentation on how to get started. Perhaps there is a script that they should run or some environment variables that they need to set. Make these steps explicit. These instructions could also be useful to your future self.
+Complete API documentation is available at: [https://astec-stfc.github.io/catapcore](https://astec-stfc.github.io/catapcore)
 
-You can also document commands to lint the code or run tests. These steps help to ensure high code quality and reduce the likelihood that the changes inadvertently break something. Having instructions for running tests is especially helpful if it requires external setup, such as starting a Selenium server for testing in a browser.
-
-## Authors and acknowledgment
-Show your appreciation to those who have contributed to the project.
+The documentation is automatically generated from docstrings and built using Sphinx. Updates are published when changes are merged to the main branch.
 
 ## License
-For open source projects, say how it is licensed.
 
-## Project status
-If you have run out of energy or time for your project, put a note at the top of the README saying that development has slowed down or stopped completely. Someone may choose to fork your project or volunteer to step in as a maintainer or owner, allowing your project to keep going. You can also make an explicit request for maintainers.
+See LICENSE file for details.

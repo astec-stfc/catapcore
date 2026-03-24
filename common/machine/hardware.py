@@ -75,6 +75,16 @@ class PVMap(BaseModel):
         *args,
         **kwargs,
     ):
+        """
+        Initialize a PVMap instance for managing EPICS PV connections.
+
+        :param is_virtual: If True, use virtual control system with prefixed PV names
+        :param connect_on_creation: If True, connect to PVs immediately upon instantiation
+        :param args: Positional arguments passed to Pydantic BaseModel
+        :param kwargs: PV field definitions and other keyword arguments
+        :type is_virtual: bool
+        :type connect_on_creation: bool
+        """
         PVMap.is_virtual = is_virtual
         PVMap.connect_on_creation = connect_on_creation
         super().__init__(
@@ -278,6 +288,16 @@ class ControlsInformation(BaseModel):
     def __init__(
         self, is_virtual: bool, connect_on_creation: bool = False, *args, **kwargs
     ):
+        """
+        Initialize a ControlsInformation instance for accessing and controlling PVs.
+
+        :param is_virtual: If True, use virtual control system mode
+        :param connect_on_creation: If True, connect to PVs when instantiated
+        :param args: Positional arguments passed to Pydantic BaseModel
+        :param kwargs: Keyword arguments including PV map configuration
+        :type is_virtual: bool
+        :type connect_on_creation: bool
+        """
         ControlsInformation.is_virtual = is_virtual
         ControlsInformation.connect_on_creation = connect_on_creation
         super(
@@ -386,6 +406,12 @@ class Properties(BaseModel):
     """Subtype of the hardware object"""
 
     def __init__(self, *args, **kwargs):
+        """
+        Initialize a Properties instance with hardware metadata.
+
+        :param args: Positional arguments passed to Pydantic BaseModel
+        :param kwargs: Keyword arguments for hardware properties (name, hardware_type, position, etc.)
+        """
         super(
             Properties,
             self,
@@ -439,6 +465,15 @@ class Hardware(BaseModel):
         connect_on_creation: bool = False,
         **kwargs,
     ):
+        """
+        Initialize a Hardware instance.
+
+        :param is_virtual: If True, use virtual control system mode
+        :param connect_on_creation: If True, connect to EPICS PVs when instantiated
+        :param kwargs: Additional keyword arguments passed to Pydantic BaseModel
+        :type is_virtual: bool
+        :type connect_on_creation: bool
+        """
         Hardware.is_virtual = is_virtual
         Hardware.connect_on_creation = connect_on_creation
         Hardware._aliases = {}

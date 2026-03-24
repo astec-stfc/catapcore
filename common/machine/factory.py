@@ -44,6 +44,20 @@ class Factory:
         connect_on_creation: bool = False,
         areas: Union[MachineArea, List[MachineArea]] = None,
     ):
+        """
+        Initialize a Factory instance for managing multiple hardware objects.
+
+        :param is_virtual: If True, use virtual control system mode
+        :param lattice_folder: Folder name containing YAML configuration files for this hardware type
+        :param hardware_type: The Hardware class to instantiate
+        :param connect_on_creation: If True, connect to PVs when Hardware objects are created
+        :param areas: Machine area(s) to filter hardware by during creation
+        :type is_virtual: bool
+        :type lattice_folder: str
+        :type hardware_type: Type[Hardware]
+        :type connect_on_creation: bool
+        :type areas: Union[MachineArea, List[MachineArea]]
+        """
         self.is_virtual = is_virtual
         self.lattice_folder = lattice_folder or hardware_type.__name__
         self._hardware_type = hardware_type
