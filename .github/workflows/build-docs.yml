@@ -43,10 +43,10 @@ jobs:
       - name: Build documentation
         run: |
           cd docs
-          make clean
-          make html
+          rm -rf _build
+          python -m sphinx -b html . _build/html
         env:
-          PYTHONPATH: ${{ github.workspace }}:$PYTHONPATH
+          PYTHONPATH: ${{ github.workspace }}
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
