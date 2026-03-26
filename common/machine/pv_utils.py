@@ -23,6 +23,7 @@ Classes:
     mapping states to integers.
 """
 
+from __future__ import annotations
 import functools
 import warnings
 import threading
