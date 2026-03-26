@@ -65,6 +65,36 @@ autodoc_default_options = {
 # Show type hints in documentation
 autodoc_typehints = 'description'
 
+# set options for pydantic models
+autodoc_pydantic_model_show_json = (
+    False  # don't include JSON schema for pydantic models
+)
+autodoc_pydantic_model_show_field_summary = (
+    True  # don't include a bullet-point list of model fields
+)
+autodoc_pydantic_model_show_config_summary = (
+    False  # don't include model configurations for pydantic models
+)
+autodoc_pydantic_field_list_validators = (
+    True  # don't list validators for pydantic model fields
+)
+autodoc_pydantic_field_show_constraints = (
+    False  # don't list constraints for pydantic model fields
+)
+autodoc_pydantic_model_show_validator_summary = (
+    False  # dont' include validator methods for pydantic models
+)
+autodoc_pydantic_model_show_validator_members = (
+    False  # don't include documentation for validator methods
+)
+autodoc_pydantic_field_doc_policy = "both"  # shows docstrings and Field descriptions
+# autodoc_typehints = "none"
+
+autodoc_mock_imports = [
+    # "laura.models.elementList",  # or whichever module fails
+    "pydantic",  # mock dependencies if needed
+]
+
 # -- Napoleon configuration --------------------------------------------------
 
 napoleon_google_docstring = False

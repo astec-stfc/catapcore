@@ -15,22 +15,22 @@ PVMap
 :class:`~catapcore.common.machine.hardware.PVMap` is the lowest-level component that directly manages EPICS PV connections.
 
 **Responsibilities:**
-- Map and connect to EPICS PVs
-- Support both physical and virtual control systems
-- Manage different PV types (Scalar, Binary, State, String, Waveform)
-- Track statistical PVs separately for analysis
-- Validate PVs using Pydantic models
+* Map and connect to EPICS PVs
+* Support both physical and virtual control systems
+* Manage different PV types (Scalar, Binary, State, String, Waveform)
+* Track statistical PVs separately for analysis
+* Validate PVs using Pydantic models
 
 **Key Properties:**
-- ``pvs``: Dictionary of all PVs in the map
-- ``statistics``: Dictionary of statistical PVs only
+* ``pvs``: Dictionary of all PVs in the map
+* ``statistics``: Dictionary of statistical PVs only
 
 **Key Methods:**
-- ``is_buffer_full()``: Check if statistics buffers are full
-- ``clear_buffer()``: Clear statistics buffers
-- ``set_buffer_size()``: Configure buffer sizes
-- ``start_buffering()``: Start collecting statistics
-- ``stop_buffering()``: Stop collecting statistics
+* ``is_buffer_full()``: Check if statistics buffers are full
+* ``clear_buffer()``: Clear statistics buffers
+* ``set_buffer_size()``: Configure buffer sizes
+* ``start_buffering()``: Start collecting statistics
+* ``stop_buffering()``: Stop collecting statistics
 
 ControlsInformation
 ~~~~~~~~~~~~~~~~~~~
@@ -38,13 +38,13 @@ ControlsInformation
 :class:`~catapcore.common.machine.hardware.ControlsInformation` wraps :class:`~catapcore.common.machine.hardware.PVMap` to provide a controlled interface for accessing and manipulating PVs.
 
 **Responsibilities:**
-- Provide controlled access to PVs through the wrapped PVMap
-- Delegate statistical operations to the underlying PVMap
-- Act as the interface for reading and writing PV values
-- Inherit from Pydantic BaseModel for validation
+* Provide controlled access to PVs through the wrapped PVMap
+* Delegate statistical operations to the underlying PVMap
+* Act as the interface for reading and writing PV values
+* Inherit from Pydantic BaseModel for validation
 
 **Key Methods:**
-- All methods from PVMap (``statistics``, ``is_buffer_full``, ``clear_buffer``, etc.)
+* All methods from PVMap (``statistics``, ``is_buffer_full``, ``clear_buffer``, etc.)
 
 Properties
 ~~~~~~~~~~
@@ -52,12 +52,12 @@ Properties
 :class:`~catapcore.common.machine.hardware.Properties` defines and manages metadata and static information about a hardware object.
 
 **Attributes:**
-- ``name``: Unique name of the hardware object
-- ``name_alias``: Alternative names for the object
-- ``hardware_type``: Type classification (e.g., "magnet", "detector")
-- ``position``: Z-position along the lattice (meters)
-- ``machine_area``: Location in the accelerator structure
-- ``subtype``: Optional hardware subtype for further categorization
+* ``name``: Unique name of the hardware object
+* ``name_alias``: Alternative names for the object
+* ``hardware_type``: Type classification (e.g., "magnet", "detector")
+* ``position``: Z-position along the lattice (meters)
+* ``machine_area``: Location in the accelerator structure
+* ``subtype``: Optional hardware subtype for further categorization
 
 Hardware
 ~~~~~~~~~
@@ -65,20 +65,20 @@ Hardware
 :class:`~catapcore.common.machine.hardware.Hardware` is the main user-facing interface that combines PVMap, ControlsInformation, and Properties.
 
 **Architecture:**
-- Inherits from Pydantic BaseModel for validation
-- Composes ControlsInformation and Properties
-- Provides unified interface for all hardware operations
+* Inherits from Pydantic BaseModel for validation
+* Composes ControlsInformation and Properties
+* Provides unified interface for all hardware operations
 
 **Key Features:**
-- Snapshot creation and restoration
-- Virtual and physical control system support
-- Buffer and statistics management
-- Hardware comparison and sorting
+* Snapshot creation and restoration
+* Virtual and physical control system support
+* Buffer and statistics management
+* Hardware comparison and sorting
 
 **Key Methods:**
-- ``create_snapshot()``: Capture current hardware state
-- ``apply_snapshot()``: Restore hardware to a saved state
-- Comparison operators for sorting by area and position
+* ``create_snapshot()``: Capture current hardware state
+* ``apply_snapshot()``: Restore hardware to a saved state
+* Comparison operators for sorting by area and position
 
 Factory
 ~~~~~~~
@@ -86,18 +86,18 @@ Factory
 :class:`~catapcore.common.machine.factory.Factory` creates and manages multiple Hardware objects of the same type.
 
 **Responsibilities:**
-- Load hardware configurations from YAML files
-- Instantiate Hardware objects from templates
-- Support filtering by machine area and subtype
-- Manage hardware lifecycle (creation, connection, disconnection)
-- Batch operations on multiple hardware objects
+* Load hardware configurations from YAML files
+* Instantiate Hardware objects from templates
+* Support filtering by machine area and subtype
+* Manage hardware lifecycle (creation, connection, disconnection)
+* Batch operations on multiple hardware objects
 
 **Key Methods:**
-- ``create_hardware()``: Instantiate hardware objects
-- ``get_hardware_by_area()``: Filter by machine area
-- ``get_hardware_by_name()``: Retrieve specific hardware
-- ``get_hardware_by_subtype()``: Filter by subtype
-- ``create_snapshot()``, ``load_snapshot()``, ``apply_snapshot()``: Manage snapshots
+* ``create_hardware()``: Instantiate hardware objects
+* ``get_hardware_by_area()``: Filter by machine area
+* ``get_hardware_by_name()``: Retrieve specific hardware
+* ``get_hardware_by_subtype()``: Filter by subtype
+* ``create_snapshot()``, ``load_snapshot()``, ``apply_snapshot()``: Manage snapshots
 
 Design Patterns
 ---------------
@@ -116,30 +116,30 @@ Pydantic Validation
 ~~~~~~~~~~~~~~~~~~~
 
 All major classes inherit from Pydantic's BaseModel, providing:
-- Automatic validation of input data
-- Type checking at instantiation
-- Easy serialization and deserialization
-- Clear schema definition
+* Automatic validation of input data
+* Type checking at instantiation
+* Easy serialization and deserialization
+* Clear schema definition
 
 PV Types
 --------
 
 catapcore supports several PV type classes, each optimized for specific data types:
 
-- :class:`~catapcore.common.machine.pv_utils.ScalarPV`: Floating-point and integer values
-- :class:`~catapcore.common.machine.pv_utils.BinaryPV`: Boolean/on-off values
-- :class:`~catapcore.common.machine.pv_utils.StatePV`: Enumerated states with mapping
-- :class:`~catapcore.common.machine.pv_utils.StringPV`: Text values
-- :class:`~catapcore.common.machine.pv_utils.WaveformPV`: Array/waveform data
-- :class:`~catapcore.common.machine.pv_utils.StatisticalPV`: Scalar with buffering and statistics
+* :class:`~catapcore.common.machine.pv_utils.ScalarPV`: Floating-point and integer values
+* :class:`~catapcore.common.machine.pv_utils.BinaryPV`: Boolean/on-off values
+* :class:`~catapcore.common.machine.pv_utils.StatePV`: Enumerated states with mapping
+* :class:`~catapcore.common.machine.pv_utils.StringPV`: Text values
+* :class:`~catapcore.common.machine.pv_utils.WaveformPV`: Array/waveform data
+* :class:`~catapcore.common.machine.pv_utils.StatisticalPV`: Scalar with buffering and statistics
 
 Control Protocols
 -----------------
 
 catapcore supports two EPICS control protocols:
 
-- **Channel Access (CA)**: The traditional EPICS protocol, recommended for most applications
-- **PV Access (PVA)**: The newer EPICS protocol with improved performance and features
+* **Channel Access (CA)**: The traditional EPICS protocol, recommended for most applications
+* **PV Access (PVA)**: The newer EPICS protocol with improved performance and features
 
 Each PV can specify which protocol to use via the ``protocol`` attribute.
 
@@ -169,6 +169,6 @@ Snapshots provide a mechanism to save and restore hardware states:
 4. **Application**: :meth:`~catapcore.common.machine.snapshot.Snapshot.apply` writes saved values back to hardware
 
 Snapshots can include:
-- Current PV values
-- Statistical buffer data (for buffering PVs)
-- Additional metadata
+* Current PV values
+* Statistical buffer data (for buffering PVs)
+* Additional metadata

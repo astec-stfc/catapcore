@@ -78,6 +78,6 @@ To connect to real EPICS PVs:
 Next Steps
 ----------
 
-- Check the :doc:`api_reference` for detailed class and method documentation
-- See :doc:`examples` for more advanced usage patterns
-- View the :doc:`architecture` for an in-depth explanation of the framework design
+* Check the :doc:`api_reference` for detailed class and method documentation
+* See :doc:`examples` for more advanced usage patterns
+* View the :doc:`architecture` for an in-depth explanation of the framework design
