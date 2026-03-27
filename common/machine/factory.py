@@ -127,13 +127,10 @@ class Factory:
                 settings = dict(yaml.load(f))  # , Loader=yamlcore.CoreLoader))
                 name = Path(file).stem
                 try:
-                    hardware_area = MachineArea(
-                        name=settings["properties"]["machine_area"]
-                    )
+                    hardware_area = MachineArea(name=settings["properties"]["machine_area"])
                     if any(
                         [
-                            hardware_area.name
-                            == _string_to_machine_area(area=area).name
+                            hardware_area.name == _string_to_machine_area(area=area).name
                             for area in areas
                         ]
                     ):
@@ -265,9 +262,7 @@ class Factory:
                     area: {**hardware}
                     for area, hardware in sorted(
                         component_by_machine_area.items(),
-                        key=lambda x: cfg.MACHINE_AREAS.index(
-                            _string_to_machine_area(x[0])
-                        ),
+                        key=lambda x: cfg.MACHINE_AREAS.index(_string_to_machine_area(x[0])),
                     )
                 }
             # # Sort the hardware dictionary by hardware order there are no area keys.
@@ -361,9 +356,7 @@ class Factory:
             subtypes,
             (str, list),
         ):
-            raise InvalidHardwareType(
-                "Please provide a subtype or list of subtypes to filter by."
-            )
+            raise InvalidHardwareType("Please provide a subtype or list of subtypes to filter by.")
         elif isinstance(subtypes, str):
             if subtypes not in valid_subtypes:
                 raise InvalidHardwareType(
@@ -576,9 +569,7 @@ class Factory:
         :rtype: Union[Dict[str, Hardware], Hardware]
         """
         if not names:
-            raise HardwareNameNotProvided(
-                f"Please specify {self._hardware_type.__name__} name(s)."
-            )
+            raise HardwareNameNotProvided(f"Please specify {self._hardware_type.__name__} name(s).")
         if isinstance(names, str):
             does_exist, component = self._name_exists(names)
             if not does_exist:
@@ -788,9 +779,7 @@ class Factory:
         """
         self._current_snapshot.apply(exclude=exclude)
 
-    def compare_snapshot_with_current_snapshot(
-        self, snapshot: Dict[str, Dict[str, Any]]
-    ) -> Dict:
+    def compare_snapshot_with_current_snapshot(self, snapshot: Dict[str, Dict[str, Any]]) -> Dict:
         """
         Get the difference between a snapshot and the one that is currently stored.
 
