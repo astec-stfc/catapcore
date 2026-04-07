@@ -352,9 +352,7 @@ def get_root() -> str:
     pyproject_toml = os.path.join(root, "pyproject.toml")
     versioneer_py = os.path.join(root, "versioneer.py")
     if not (
-        os.path.exists(setup_py)
-        or os.path.exists(pyproject_toml)
-        or os.path.exists(versioneer_py)
+        os.path.exists(setup_py) or os.path.exists(pyproject_toml) or os.path.exists(versioneer_py)
     ):
         # allow 'python path/to/setup.py COMMAND'
         root = os.path.dirname(os.path.realpath(os.path.abspath(sys.argv[0])))
@@ -362,9 +360,7 @@ def get_root() -> str:
         pyproject_toml = os.path.join(root, "pyproject.toml")
         versioneer_py = os.path.join(root, "versioneer.py")
     if not (
-        os.path.exists(setup_py)
-        or os.path.exists(pyproject_toml)
-        or os.path.exists(versioneer_py)
+        os.path.exists(setup_py) or os.path.exists(pyproject_toml) or os.path.exists(versioneer_py)
     ):
         err = (
             "Versioneer was unable to run the project root directory. "
@@ -1545,13 +1541,9 @@ def versions_from_file(filename: str) -> Dict[str, Any]:
             contents = f.read()
     except OSError:
         raise NotThisMethod("unable to read _version.py")
-    mo = re.search(
-        r"version_json = '''\n(.*)'''  # END VERSION_JSON", contents, re.M | re.S
-    )
+    mo = re.search(r"version_json = '''\n(.*)'''  # END VERSION_JSON", contents, re.M | re.S)
     if not mo:
-        mo = re.search(
-            r"version_json = '''\r\n(.*)'''  # END VERSION_JSON", contents, re.M | re.S
-        )
+        mo = re.search(r"version_json = '''\r\n(.*)'''  # END VERSION_JSON", contents, re.M | re.S)
     if not mo:
         raise NotThisMethod("no version_json in _version.py")
     return json.loads(mo.group(1))
@@ -1840,9 +1832,7 @@ def get_versions(verbose: bool = False) -> Dict[str, Any]:
     handlers = HANDLERS.get(cfg.VCS)
     assert handlers, "unrecognized VCS '%s'" % cfg.VCS
     verbose = verbose or bool(cfg.verbose)  # `bool()` used to avoid `None`
-    assert (
-        cfg.versionfile_source is not None
-    ), "please set versioneer.versionfile_source"
+    assert cfg.versionfile_source is not None, "please set versioneer.versionfile_source"
     assert cfg.tag_prefix is not None, "please set versioneer.tag_prefix"
 
     versionfile_abs = os.path.join(root, cfg.versionfile_source)
@@ -2134,8 +2124,7 @@ def get_cmdclass(cmdclass: Optional[Dict[str, Any]] = None):
             from setuptools import unicode_utils
 
             normalized = [
-                unicode_utils.filesys_decode(f).replace(os.sep, "/")
-                for f in self.filelist.files
+                unicode_utils.filesys_decode(f).replace(os.sep, "/") for f in self.filelist.files
             ]
 
             manifest_filename = os.path.join(self.egg_info, "SOURCES.txt")
@@ -2168,9 +2157,7 @@ def get_cmdclass(cmdclass: Optional[Dict[str, Any]] = None):
             # updated value
             target_versionfile = os.path.join(base_dir, cfg.versionfile_source)
             print("UPDATING %s" % target_versionfile)
-            write_to_version_file(
-                target_versionfile, self._versioneer_generated_versions
-            )
+            write_to_version_file(target_versionfile, self._versioneer_generated_versions)
 
     cmds["sdist"] = cmd_sdist
 

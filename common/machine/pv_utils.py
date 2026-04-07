@@ -23,6 +23,7 @@ Classes:
     mapping states to integers.
 """
 
+from __future__ import annotations
 import functools
 import warnings
 import threading
@@ -124,6 +125,12 @@ class PVSignal(BaseModel):
     )
 
     def __init__(self, *args, **kwargs):
+        """
+        Initialize a PVSignal instance for EPICS PV interaction.
+
+        :param args: Positional arguments passed to Pydantic BaseModel
+        :param kwargs: PV configuration including name, protocol, description, and read_only flag
+        """
         super(PVSignal, self).__init__(*args, **kwargs)
         self._pv: Protocol = None
         self.create_pv_instance()
@@ -172,13 +179,9 @@ class PVSignal(BaseModel):
         :rtype: Any
         """
         try:
-            retrieved_value = self._pv.get(
-                as_numpy=as_numpy, as_string=as_string, count=count
-            )
+            retrieved_value = self._pv.get(as_numpy=as_numpy, as_string=as_string, count=count)
             if isinstance(expected_type, list):
-                is_valid_type = any(
-                    [isinstance(retrieved_value, type_) for type_ in expected_type]
-                )
+                is_valid_type = any([isinstance(retrieved_value, type_) for type_ in expected_type])
                 if not is_valid_type:
                     raise ValueError
             if not isinstance(expected_type, list):
@@ -195,9 +198,7 @@ class PVSignal(BaseModel):
                     timeout=1.0,
                 )
             if isinstance(expected_type, list):
-                is_valid_type = any(
-                    [isinstance(retrieved_value, type_) for type_ in expected_type]
-                )
+                is_valid_type = any([isinstance(retrieved_value, type_) for type_ in expected_type])
                 if not is_valid_type:
                     raise ValueError
             if not isinstance(expected_type, list):
@@ -282,11 +283,7 @@ class PVSignal(BaseModel):
         self.put(value=value)
 
     def __repr__(self) -> str:
-        return (
-            "<PVSignal>("
-            + f"name={self._pv.pvname}, "
-            + f"connected={self._pv.connected})"
-        )
+        return "<PVSignal>(" + f"name={self._pv.pvname}, " + f"connected={self._pv.connected})"
 
 
 class StringPV(PVSignal):
@@ -300,6 +297,12 @@ class StringPV(PVSignal):
     """Length of the PV"""
 
     def __init__(self, *args, **kwargs):
+        """
+        Initialize a StringPV instance for string-type EPICS PVs.
+
+        :param args: Positional arguments passed to PVSignal
+        :param kwargs: Keyword arguments including name, protocol, and count
+        """
         super(StringPV, self).__init__(*args, **kwargs)
 
     def __repr__(self) -> str:
@@ -357,6 +360,12 @@ class ScalarPV(PVSignal):
     """Value of the PV"""
 
     def __init__(self, *args, **kwargs):
+        """
+        Initialize a ScalarPV instance for scalar-type EPICS PVs.
+
+        :param args: Positional arguments passed to PVSignal
+        :param kwargs: Keyword arguments including name, protocol, units, and value type
+        """
         super(ScalarPV, self).__init__(*args, **kwargs)
 
     def __repr__(self) -> str:
@@ -415,6 +424,12 @@ class StatePV(PVSignal):
     """Mapping between state names as string and values as integers"""
 
     def __init__(self, *args, **kwargs):
+        """
+        Initialize a StatePV instance for enumerated state EPICS PVs.
+
+        :param args: Positional arguments passed to PVSignal
+        :param kwargs: Keyword arguments including name, protocol, and states mapping
+        """
         super(StatePV, self).__init__(*args, **kwargs)
 
     @field_validator("states", mode="before")
@@ -500,6 +515,12 @@ class BinaryPV(PVSignal):
     """Value of the PV"""
 
     def __init__(self, *args, **kwargs):
+        """
+        Initialize a BinaryPV instance for binary-type EPICS PVs.
+
+        :param args: Positional arguments passed to PVSignal
+        :param kwargs: Keyword arguments including name, protocol, and value type
+        """
         super(BinaryPV, self).__init__(*args, **kwargs)
 
     def __repr__(self):
@@ -560,6 +581,12 @@ class WaveformPV(PVSignal):
     """Units of the PV"""
 
     def __init__(self, *args, **kwargs):
+        """
+        Initialize a WaveformPV instance for waveform-type EPICS PVs.
+
+        :param args: Positional arguments passed to PVSignal
+        :param kwargs: Keyword arguments including name, protocol, units, and numpy array type
+        """
         super(WaveformPV, self).__init__(*args, **kwargs)
 
     @model_validator(mode="after")
@@ -632,6 +659,15 @@ class StatisticalPV(ScalarPV):
         *args,
         **kwargs,
     ):
+        """
+        Initialize a StatisticalPV instance for scalar PVs with statistical buffering.
+
+        Supports automatic buffering and calculation of statistics (mean, std. dev., median, mode)
+        on PV values. Can collect statistics automatically if auto_buffer is True.
+
+        :param args: Positional arguments passed to ScalarPV
+        :param kwargs: Keyword arguments including name, protocol, auto_buffer, and buffer_size
+        """
         super(StatisticalPV, self).__init__(*args, **kwargs)
         self._is_buffering = False
         self._value = self.pv._value
@@ -678,9 +714,7 @@ class StatisticalPV(ScalarPV):
                     self._buffer.append((timestamp, value))
                     if len(self._buffer) > 2:
                         self._mean = mean([v for _, v in self._buffer])
-                        self._stdev = stdev(
-                            [v for _, v in self._buffer], xbar=self._mean
-                        )
+                        self._stdev = stdev([v for _, v in self._buffer], xbar=self._mean)
                         self._median = median([v for _, v in self._buffer])
                         self._mode = mode([v for _, v in self._buffer])
 
@@ -689,18 +723,14 @@ class StatisticalPV(ScalarPV):
                 if abs(value) < abs(self._min):
                     self._min = value
                 self._value = value
-                self._timestamp = (
-                    datetime.fromtimestamp(timestamp) if timestamp else datetime.now()
-                )
+                self._timestamp = datetime.fromtimestamp(timestamp) if timestamp else datetime.now()
         except Exception as e:
             warnings.warn(
                 FailedEPICSOperationWarning(f"Callback error: {e}"),
             )
 
     @use_initial_context
-    def update_ca_stats(
-        self, value: float | int | ntfloat | ntint, timestamp: float = None, **kw
-    ):
+    def update_ca_stats(self, value: float | int | ntfloat | ntint, timestamp: float = None, **kw):
         """
         Update the buffer statistics and push back the buffer deque
 
@@ -880,9 +910,9 @@ class PVInfo(BaseModel):
     """Virtual PV name, if applicable"""
     description: str | None = None
     """Description of PV"""
-    type: Type[
-        ScalarPV | BinaryPV | StatePV | StringPV | WaveformPV | StatisticalPV
-    ] = StatisticalPV
+    type: Type[ScalarPV | BinaryPV | StatePV | StringPV | WaveformPV | StatisticalPV] = (
+        StatisticalPV
+    )
     """Type of PV (see :mod:`~catapcore.common.machine.pv_utils`)"""
     protocol: Literal["CA", "PVA"] = "CA"
     """Chosen Protocol for the PV (ChannelAccess or PVAccess)"""
