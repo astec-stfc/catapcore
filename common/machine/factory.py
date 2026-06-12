@@ -190,14 +190,16 @@ class Factory:
         :returns: Dictionary of :class:`~catapcore.common.machine.hardware.Hardware` objects
         :rtype: Dict[str, Hardware]
         """
+        from laura.models.element import Element
         hardware_type = T.__name__
         elems = {
             k: v
             for k, v in cfg.LAURA_LATTICE.elements.items()
-            if v.hardware_class == hardware_type
+            if isinstance(v, Element) and
+            (v.hardware_class == hardware_type
             or v.hardware_type == hardware_type
             or v.__class__.model_fields["hardware_type"].alias == hardware_type
-            or v.__class__.model_fields["hardware_class"].alias == hardware_type
+            or v.__class__.model_fields["hardware_class"].alias == hardware_type)
         }
         hardware_mappings = {}
         if areas is None:
