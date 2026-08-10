@@ -82,6 +82,7 @@ def set_config_format(config: Literal["CATAP", "LAURA"], lattice_location: str) 
             layout=os.path.join(lattice_location, "layouts.yaml"),
             section=os.path.join(lattice_location, "sections.yaml"),
             element_list=os.path.join(lattice_location, "YAML"),
+            eager_mode=True,
         )
         LATTICE_LOCATION = None
         _area_names = list(LAURA_LATTICE.sections.keys())
