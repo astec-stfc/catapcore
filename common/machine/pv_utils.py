@@ -67,7 +67,6 @@ from catapcore.common.exceptions import FailedEPICSOperationWarning, UnexpectedP
 from catapcore.common.machine.protocol import CA, PVA, Protocol
 from catapcore.config import EPICS_TIMEOUT
 
-
 __all__ = [
     "PVSignal",
     "StringPV",
@@ -883,7 +882,10 @@ class PVInfo(BaseModel):
     """Description of PV"""
     type: Type[
         ScalarPV | BinaryPV | StatePV | StringPV | WaveformPV | StatisticalPV
-    ] = Field(validation_alias=AliasChoices("type", "pv_type", "control_type"), default=StatisticalPV,)
+    ] = Field(
+        validation_alias=AliasChoices("type", "pv_type", "control_type"),
+        default=StatisticalPV,
+    )
     """Type of PV (see :mod:`~catapcore.common.machine.pv_utils`)"""
     protocol: Literal["CA", "PVA"] = "CA"
     """Chosen Protocol for the PV (ChannelAccess or PVAccess)"""
