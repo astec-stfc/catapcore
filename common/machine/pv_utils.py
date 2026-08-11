@@ -883,7 +883,7 @@ class PVInfo(BaseModel):
     """Description of PV"""
     type: Type[
         ScalarPV | BinaryPV | StatePV | StringPV | WaveformPV | StatisticalPV
-    ] = StatisticalPV
+    ] = Field(validation_alias=AliasChoices("type", "pv_type", "control_type"), default=StatisticalPV,)
     """Type of PV (see :mod:`~catapcore.common.machine.pv_utils`)"""
     protocol: Literal["CA", "PVA"] = "CA"
     """Chosen Protocol for the PV (ChannelAccess or PVAccess)"""
