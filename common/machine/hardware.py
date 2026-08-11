@@ -412,9 +412,11 @@ class Properties(BaseModel):
             )
 
     @field_validator("name_alias", mode="before")
-    def create_alias_list(cls, v: str | None) -> List[str]:
+    def create_alias_list(cls, v: str | List[str] | None) -> List[str]:
         if v is None:
             return [""]
+        if isinstance(v, list):
+            return v
         aliases = v.split(",")
         return [alias.strip() for alias in aliases]
 
