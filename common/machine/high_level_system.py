@@ -128,14 +128,10 @@ class HighLevelSystemComponents(BaseModel):
                         if component_handle not in snapshot:
                             # if this is the first component of its type in the snapshot
                             # update as normal
-                            snapshot.update(
-                                {component_handle: {**component.create_snapshot()}}
-                            )
+                            snapshot.update({component_handle: {**component.create_snapshot()}})
                         else:
                             # otherwise, we want to append to current type of component
-                            snapshot[component_handle].update(
-                                {**component.create_snapshot()}
-                            )
+                            snapshot[component_handle].update({**component.create_snapshot()})
         return snapshot
 
     def _apply_single_component_snapshot(
@@ -166,9 +162,7 @@ class HighLevelSystemComponents(BaseModel):
                 category=InvalidSnapshotSetting,
             )
 
-    def apply_snapshot(
-        self, snapshot: Dict[str, Dict[str, Any]], apply_to: List[str] = None
-    ):
+    def apply_snapshot(self, snapshot: Dict[str, Dict[str, Any]], apply_to: List[str] = None):
         """
         Apply snapshot to the entire
         :class:`~catapcore.common.machine.high_level_system.HighLevelSystem` object
