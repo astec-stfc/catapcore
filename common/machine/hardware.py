@@ -18,6 +18,8 @@ from pydantic import (
     ConfigDict,
     SerializeAsAny,
     field_validator,
+    Field,
+    AliasChoices
 )
 import catapcore.config as cfg
 from typing import Any, ClassVar, Dict, List, Union, Type, Callable
@@ -379,11 +381,15 @@ class Properties(BaseModel):
     )
     name: str
     """Name of hardware object"""
-    name_alias: List[str]
+    name_alias: List[str] | None = Field(
+        default=None, validation_alias=AliasChoices("name_alias", "alias")
+    )
     """Aliases to the name of the hardware object"""
     hardware_type: str
     """Type of hardware object"""
-    position: float
+    position: Union[float, List[float]] = Field(
+        validation_alias=AliasChoices("position", "physical_middle_z", "physical_middle")
+    )
     """Z position along the lattice in meters"""
     machine_area: MachineArea
     """Machine area of the hardware object"""
@@ -417,9 +423,19 @@ class Properties(BaseModel):
             )
 
     @field_validator("name_alias", mode="before")
-    def create_alias_list(cls, v: str) -> List[str]:
+    def create_alias_list(cls, v: str | List[str] | None) -> List[str]:
+        if v is None:
+            return [""]
+        if isinstance(v, list):
+            return v
         aliases = v.split(",")
         return [alias.strip() for alias in aliases]
+
+    @field_validator("position", mode="before")
+    def validate_position(cls, v: float | List[float]) -> float:
+        if isinstance(v, list):
+            return v[2]
+        return v
 
 
 class Hardware(BaseModel):
