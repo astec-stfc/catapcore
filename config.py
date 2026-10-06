@@ -35,7 +35,10 @@ _hardware_types = {}
 
 
 def _convert_types_to_named_tuple(types: Dict[str, List[str]]) -> Tuple:
-    _subtypes = [namedtuple(type_name, types[type_name])(*types[type_name]) for type_name in types]
+    _subtypes = [
+        namedtuple(type_name, types[type_name])(*types[type_name])
+        for type_name in types
+    ]
     _types = namedtuple("TYPES", types.keys())
     return _types(*_subtypes)
 
@@ -60,7 +63,9 @@ CONFIG_FORMAT = "CATAP"  # can be "CATAP" or "LAURA"
 LAURA_LATTICE = None
 
 
-def set_config_format(config: Literal["CATAP", "LAURA"], lattice_location: str, eager_mode: bool = False) -> None:
+def set_config_format(
+    config: Literal["CATAP", "LAURA"], lattice_location: str, eager_mode: bool = False
+) -> None:
     global CONFIG_FORMAT, LAURA_LATTICE, LATTICE_LOCATION, MACHINE_AREAS
 
     # Validate first
@@ -85,8 +90,9 @@ def set_config_format(config: Literal["CATAP", "LAURA"], lattice_location: str, 
         _area_names = list(LAURA_LATTICE.sections.keys())
         _area_names.append("TEST")
         _machine_areas_tuple = namedtuple("MACHINE_AREAS", _area_names)
-        MACHINE_AREAS = _machine_areas_tuple(*[MachineArea(name=name) for name in _area_names])
+        MACHINE_AREAS = _machine_areas_tuple(
+            *[MachineArea(name=name) for name in _area_names]
+        )
     else:
         LATTICE_LOCATION = lattice_location
         LAURA_LATTICE = None
-

@@ -179,9 +179,13 @@ class PVSignal(BaseModel):
         :rtype: Any
         """
         try:
-            retrieved_value = self._pv.get(as_numpy=as_numpy, as_string=as_string, count=count)
+            retrieved_value = self._pv.get(
+                as_numpy=as_numpy, as_string=as_string, count=count
+            )
             if isinstance(expected_type, list):
-                is_valid_type = any([isinstance(retrieved_value, type_) for type_ in expected_type])
+                is_valid_type = any(
+                    [isinstance(retrieved_value, type_) for type_ in expected_type]
+                )
                 if not is_valid_type:
                     raise ValueError
             if not isinstance(expected_type, list):
@@ -198,7 +202,9 @@ class PVSignal(BaseModel):
                     timeout=1.0,
                 )
             if isinstance(expected_type, list):
-                is_valid_type = any([isinstance(retrieved_value, type_) for type_ in expected_type])
+                is_valid_type = any(
+                    [isinstance(retrieved_value, type_) for type_ in expected_type]
+                )
                 if not is_valid_type:
                     raise ValueError
             if not isinstance(expected_type, list):
@@ -283,7 +289,11 @@ class PVSignal(BaseModel):
         self.put(value=value)
 
     def __repr__(self) -> str:
-        return "<PVSignal>(" + f"name={self._pv.pvname}, " + f"connected={self._pv.connected})"
+        return (
+            "<PVSignal>("
+            + f"name={self._pv.pvname}, "
+            + f"connected={self._pv.connected})"
+        )
 
 
 class StringPV(PVSignal):
@@ -714,7 +724,9 @@ class StatisticalPV(ScalarPV):
                     self._buffer.append((timestamp, value))
                     if len(self._buffer) > 2:
                         self._mean = mean([v for _, v in self._buffer])
-                        self._stdev = stdev([v for _, v in self._buffer], xbar=self._mean)
+                        self._stdev = stdev(
+                            [v for _, v in self._buffer], xbar=self._mean
+                        )
                         self._median = median([v for _, v in self._buffer])
                         self._mode = mode([v for _, v in self._buffer])
 
@@ -723,14 +735,18 @@ class StatisticalPV(ScalarPV):
                 if abs(value) < abs(self._min):
                     self._min = value
                 self._value = value
-                self._timestamp = datetime.fromtimestamp(timestamp) if timestamp else datetime.now()
+                self._timestamp = (
+                    datetime.fromtimestamp(timestamp) if timestamp else datetime.now()
+                )
         except Exception as e:
             warnings.warn(
                 FailedEPICSOperationWarning(f"Callback error: {e}"),
             )
 
     @use_initial_context
-    def update_ca_stats(self, value: float | int | ntfloat | ntint, timestamp: float = None, **kw):
+    def update_ca_stats(
+        self, value: float | int | ntfloat | ntint, timestamp: float = None, **kw
+    ):
         """
         Update the buffer statistics and push back the buffer deque
 

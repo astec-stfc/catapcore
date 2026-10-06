@@ -55,7 +55,9 @@ class Snapshot:
             makedirs(self._default_snapshot_location)
         self._snapshot = None
 
-    def _update(self, hardware: Hardware, snapshot: Dict[str, Dict[str, Any]] = {}) -> None:
+    def _update(
+        self, hardware: Hardware, snapshot: Dict[str, Dict[str, Any]] = {}
+    ) -> None:
         """
         Update the current snapshot for a specific object
 
@@ -116,7 +118,9 @@ class Snapshot:
             if d1[k]["value"] != d2[k]["value"]
         }
 
-    def _is_snapshot_correct_type(self, snapshot: Dict[str, Dict[str, Any]] = None) -> bool:
+    def _is_snapshot_correct_type(
+        self, snapshot: Dict[str, Dict[str, Any]] = None
+    ) -> bool:
         """
         Check if the hardware type of the snapshot matches `self._hardware_type`
 
@@ -142,9 +146,9 @@ class Snapshot:
         :rtype: Dict[str, Dict[str, Any]]
         """
         if first_snapshot and second_snapshot:
-            if self._is_snapshot_correct_type(first_snapshot) and self._is_snapshot_correct_type(
-                second_snapshot
-            ):
+            if self._is_snapshot_correct_type(
+                first_snapshot
+            ) and self._is_snapshot_correct_type(second_snapshot):
                 diffs = {}
                 s1 = first_snapshot[self._hardware_type]
                 s2 = second_snapshot[self._hardware_type]
@@ -215,7 +219,9 @@ class Snapshot:
             if extension in ["yaml", "yml"]:
                 save_location = path.join(self._default_snapshot_location, filename)
             else:
-                save_location = path.join(self._default_snapshot_location, root + ".yaml")
+                save_location = path.join(
+                    self._default_snapshot_location, root + ".yaml"
+                )
             output = deepcopy(self._snapshot)
             output.update(
                 {
@@ -228,7 +234,9 @@ class Snapshot:
                 yaml.dump(output, file)
             return save_location
         else:
-            raise ValueError(f"Please provide a filename to save {self._hardware_type} snapshot")
+            raise ValueError(
+                f"Please provide a filename to save {self._hardware_type} snapshot"
+            )
 
     def _load_file(self, filename: str = None) -> Dict:
         """
@@ -250,12 +258,16 @@ class Snapshot:
             if extension in ["yaml", "yml"]:
                 load_location = path.join(self._default_snapshot_location, filename)
             else:
-                load_location = path.join(self._default_snapshot_location, root + ".yaml")
+                load_location = path.join(
+                    self._default_snapshot_location, root + ".yaml"
+                )
             with open(load_location, "r") as file:
                 yaml = YAML(typ="safe")
                 return yaml.load(file.read())
         else:
-            raise ValueError(f"Please provide a filename to load {self._hardware_type} snapshot")
+            raise ValueError(
+                f"Please provide a filename to load {self._hardware_type} snapshot"
+            )
 
     def load(self, filename: str = None) -> None:
         """

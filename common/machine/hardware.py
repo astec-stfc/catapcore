@@ -19,7 +19,7 @@ from pydantic import (
     SerializeAsAny,
     field_validator,
     Field,
-    AliasChoices
+    AliasChoices,
 )
 import catapcore.config as cfg
 from typing import Any, ClassVar, Dict, List, Union, Type, Callable
@@ -104,7 +104,12 @@ class PVMap(BaseModel):
             try:
                 if isinstance(
                     self.__getattribute__(name),
-                    ScalarPV | BinaryPV | StatePV | StringPV | WaveformPV | StatisticalPV,
+                    ScalarPV
+                    | BinaryPV
+                    | StatePV
+                    | StringPV
+                    | WaveformPV
+                    | StatisticalPV,
                 ):
                     entry = {name: self.__getattribute__(name)}
                     if isinstance(self.__getattribute__(name), StatisticalPV):
@@ -112,7 +117,9 @@ class PVMap(BaseModel):
                     self._pvs.update(entry)
             except AttributeError:
                 warnings.warn(
-                    message=UnexpectedPVEntry(f"Found unexpected entry ({name}) in pv_record_map.")
+                    message=UnexpectedPVEntry(
+                        f"Found unexpected entry ({name}) in pv_record_map."
+                    )
                 )
 
     @field_validator(
@@ -158,7 +165,9 @@ class PVMap(BaseModel):
     @property
     def pvs(
         self,
-    ) -> Dict[str, BinaryPV | ScalarPV | StatePV | StatisticalPV | StringPV | WaveformPV]:
+    ) -> Dict[
+        str, BinaryPV | ScalarPV | StatePV | StatisticalPV | StringPV | WaveformPV
+    ]:
         """
         Return a dictionary of all PVs in the map (see :mod:`~catapcore.common.machine.pv_utils`).
 
@@ -166,7 +175,9 @@ class PVMap(BaseModel):
         """
         return self._pvs
 
-    def is_buffer_full(self, names: Union[str, List[str], None]) -> Union[bool, Dict[str, bool]]:
+    def is_buffer_full(
+        self, names: Union[str, List[str], None]
+    ) -> Union[bool, Dict[str, bool]]:
         """
         Check if the statistics buffer is full (i.e. if `len(PV.buffer) == PV.buffer_size)`.
 
@@ -276,7 +287,9 @@ class ControlsInformation(BaseModel):
     )
     pv_record_map: PVMap = None
 
-    def __init__(self, is_virtual: bool, connect_on_creation: bool = False, *args, **kwargs):
+    def __init__(
+        self, is_virtual: bool, connect_on_creation: bool = False, *args, **kwargs
+    ):
         """
         Initialize a ControlsInformation instance for accessing and controlling PVs.
 
@@ -317,7 +330,9 @@ class ControlsInformation(BaseModel):
         """
         return self.pv_record_map.statistics
 
-    def is_buffer_full(self, name: Union[str, List[str], None]) -> Union[bool, Dict[str, bool]]:
+    def is_buffer_full(
+        self, name: Union[str, List[str], None]
+    ) -> Union[bool, Dict[str, bool]]:
         """
         Check if the statistics buffer is full (i.e. if `len(PV.buffer) == PV.buffer_size)`.
 
@@ -388,7 +403,9 @@ class Properties(BaseModel):
     hardware_type: str
     """Type of hardware object"""
     position: Union[float, List[float]] = Field(
-        validation_alias=AliasChoices("position", "physical_middle_z", "physical_middle")
+        validation_alias=AliasChoices(
+            "position", "physical_middle_z", "physical_middle"
+        )
     )
     """Z position along the lattice in meters"""
     machine_area: MachineArea
@@ -557,7 +574,9 @@ class Hardware(BaseModel):
             names = list(self.statistics.keys())
         elif isinstance(names, str):
             return self.statistics[names]
-        return {pv: self.statistics[pv] for pv in names if len(self.statistics[pv]._buffer)}
+        return {
+            pv: self.statistics[pv] for pv in names if len(self.statistics[pv]._buffer)
+        }
 
     def is_buffer_full(
         self, names: Union[str, List[str], None] = None
@@ -574,7 +593,9 @@ class Hardware(BaseModel):
         """
         return self.controls_information.is_buffer_full(names)
 
-    def is_buffering(self, names: Union[str, List[str]] = None) -> Union[bool, Dict[str, bool]]:
+    def is_buffering(
+        self, names: Union[str, List[str]] = None
+    ) -> Union[bool, Dict[str, bool]]:
         """
         Check if :class:`~catapcore.common.machine.pv_utils.StatisticalPV` objects is currently buffering
 
@@ -597,7 +618,9 @@ class Hardware(BaseModel):
             }
             return handle_results
 
-    def set_buffer_size(self, names: Union[str, List[str], None] = None, size: int = 10) -> None:
+    def set_buffer_size(
+        self, names: Union[str, List[str], None] = None, size: int = 10
+    ) -> None:
         """
         Sets the size of the statistics buffers.
 
@@ -674,8 +697,12 @@ class Hardware(BaseModel):
                     snapshot[self.name].update({handle: {"value": pv.get()}})
                 if self.is_buffering(handle):
                     stats = self.get_statistics(handle)
-                    stats_buffer = array(stats.buffer)[::, 1] if stats.buffer else array([])
-                    timestamps = array(stats.buffer)[::, 0] if stats.buffer else array([])
+                    stats_buffer = (
+                        array(stats.buffer)[::, 1] if stats.buffer else array([])
+                    )
+                    timestamps = (
+                        array(stats.buffer)[::, 0] if stats.buffer else array([])
+                    )
                     snapshot[self.name][handle].update(
                         {
                             "buffer": stats_buffer.tolist(),
@@ -704,7 +731,9 @@ class Hardware(BaseModel):
         for handle, setting in snapshot.items():
             if handle in self._snapshot_settables:
                 ca.use_initial_context()
-                self.controls_information.pv_record_map.pvs[handle].put(setting["value"])
+                self.controls_information.pv_record_map.pvs[handle].put(
+                    setting["value"]
+                )
 
     def __eq__(self, other):
         return (self.name == other.name) and (self.position == other.position)
@@ -765,8 +794,14 @@ def add_stats_to_controls_information(
         exclude = ["stats"]
     newprops = {}
     for name, attr in cls.__dict__.items():
-        if isinstance(attr, property) and ("stats" not in name) and (name not in exclude):
-            getter_code = inspect.getsource(attr.fget)  # Get the source code of the getter
+        if (
+            isinstance(attr, property)
+            and ("stats" not in name)
+            and (name not in exclude)
+        ):
+            getter_code = inspect.getsource(
+                attr.fget
+            )  # Get the source code of the getter
             # Check if the property calls the target function
             if target_func_name in getter_code:
                 # Create the new function based on the getter code
@@ -791,7 +826,9 @@ def create_dynamic_controls_stats_property_from_getter(getter_func: Callable):
     # Append 'stats' to the function call in controls_information
     # Remember that we already know there is a '_stats' property in controls_information
     def dynamic_function(self):
-        return getattr(self.controls_information, f"{getter_code.split('.')[-1].strip(newl)}_stats")
+        return getattr(
+            self.controls_information, f"{getter_code.split('.')[-1].strip(newl)}_stats"
+        )
 
     return dynamic_function
 

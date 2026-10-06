@@ -67,15 +67,21 @@ autodoc_default_options = {
 autodoc_typehints = "description"
 
 # set options for pydantic models
-autodoc_pydantic_model_show_json = False  # don't include JSON schema for pydantic models
+autodoc_pydantic_model_show_json = (
+    False  # don't include JSON schema for pydantic models
+)
 autodoc_pydantic_model_show_field_summary = (
     True  # don't include a bullet-point list of model fields
 )
 autodoc_pydantic_model_show_config_summary = (
     False  # don't include model configurations for pydantic models
 )
-autodoc_pydantic_field_list_validators = True  # don't list validators for pydantic model fields
-autodoc_pydantic_field_show_constraints = False  # don't list constraints for pydantic model fields
+autodoc_pydantic_field_list_validators = (
+    True  # don't list validators for pydantic model fields
+)
+autodoc_pydantic_field_show_constraints = (
+    False  # don't list constraints for pydantic model fields
+)
 autodoc_pydantic_model_show_validator_summary = (
     False  # dont' include validator methods for pydantic models
 )
