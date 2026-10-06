@@ -233,7 +233,7 @@ class Factory:
                             is_virtual=self.is_virtual,
                             connect_on_creation=self.connect_on_creation,
                             controls_information=elem.controls.model_dump(),
-                            properties=flatten(elem.model_dump()),
+                            properties=flatten(elem.model_dump(by_alias=False)),
                         )
                 except KeyError:
                     raise MachineAreaNotProvided(
